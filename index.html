@@ -1041,11 +1041,32 @@ async function askFor(name){
   }catch(e){ return false; }
 }
 
+// Outside the claude.ai viewer (GitHub Pages, a local file, any normal browser)
+// nothing blocks an ordinary download, so hand the PDF to the browser directly.
+function browserDownload(blob, name){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.rel = 'noopener'; a.style.display = 'none';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 60000);
+}
+
+function buildPdf(){
+  const sel  = selected();
+  const xHrs = Math.max(0, Number(state.xhrs) || 0), xAmt = xHrs * RATE;
+  return makePdf(sel,
+    sel.reduce((a,o)=>a+o.parts,0),
+    sel.reduce((a,o)=>a+o.labor,0) + xAmt,
+    sel.reduce((a,o)=>a+o.hrs,0) + xHrs,
+    sel.reduce((a,o)=>a+o.total,0) + xAmt, xHrs, xAmt);
+}
+
 $('act-print').addEventListener('click', async ()=>{
   const btn = $('act-print');
   const label = btn.textContent;
   btn.disabled = true; btn.textContent = 'Preparing...';
   try{
+    const blob = buildPdf();
     let dl = await getDownloads();
     if(!dl){
       // A pending consent prompt is worth asking for once, on this deliberate click.
@@ -1056,31 +1077,20 @@ $('act-print').addEventListener('click', async ()=>{
           toast('Saving was declined for this page. Reload and allow it to download the PDF.', 7000);
           return;
         }
-        // Not offered to this view. Rather than dead-end, hand over the build
-        // sheet as text so it can still go out in an email.
-        // Saving a PDF here needs "Can edit" access. Hand over a formatted copy
-        // instead: paste into Word, then File > Save As > PDF.
-        try{
-          await copyRich();
-          toast('Direct PDF download needs "Can edit" access on this page. The build sheet was copied '
-              + 'as a formatted table instead — paste into Word and Save As PDF, or straight into an email.', 10000);
-        }catch(e){
-          toast('Direct PDF download needs "Can edit" access on this page. Use Copy for Word / Email instead.', 8000);
-        }
+        // No platform save prompt here: fall back to a plain browser download.
+        browserDownload(blob, pdfName());
+        toast('Build sheet downloaded');
         return;
       }
     }
-    const sel  = selected();
-    const xHrs = Math.max(0, Number(state.xhrs) || 0), xAmt = xHrs * RATE;
-    const blob = makePdf(sel,
-      sel.reduce((a,o)=>a+o.parts,0),
-      sel.reduce((a,o)=>a+o.labor,0) + xAmt,
-      sel.reduce((a,o)=>a+o.hrs,0) + xHrs,
-      sel.reduce((a,o)=>a+o.total,0) + xAmt, xHrs, xAmt);
     await dl.save({filename: pdfName(), data: blob});
     toast('Build sheet saved');
   }catch(err){
     const c = (err && err.code) || '';
+    if(c === 'unavailable' || c === 'not_granted' || c === 'capability_disabled' || c === 'capability_removed'){
+      try{ browserDownload(buildPdf(), pdfName()); toast('Build sheet downloaded'); return; }
+      catch(e){ /* fall through to the message below */ }
+    }
     toast(
       c === 'declined'     ? 'Save cancelled — click Download again to retry.'
     : c === 'rate_limited' ? 'A save prompt is already open. Try again in a moment.'
