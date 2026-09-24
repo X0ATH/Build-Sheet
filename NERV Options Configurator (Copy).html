@@ -1,0 +1,1133 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>NERV Options Configurator (Copy)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --paper:#F5F6F3; --surface:#FFFFFF; --surface-2:#FAFBF8;
+  --ink:#11161D; --ink-2:#39414C; --muted:#6C7682;
+  --rule:#DDE1DB; --rule-2:#EDEFEA;
+  --accent:#B32229; --accent-soft:#F6E7E7;
+  --signal:#9A6A10; --signal-soft:#FAF0DC; --signal-rule:#E3C489;
+  --ok:#1F6B45; --ok-soft:#E4F0E9;
+  --shadow:0 1px 2px rgba(17,22,29,.06),0 8px 24px rgba(17,22,29,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1217; --surface:#161B22; --surface-2:#1B212A;
+    --ink:#E9ECEF; --ink-2:#BFC6CE; --muted:#8B95A1;
+    --rule:#2A323C; --rule-2:#222932;
+    --accent:#F0656C; --accent-soft:#2E1A1C;
+    --signal:#E0B25E; --signal-soft:#2A2214; --signal-rule:#4A3C1E;
+    --ok:#6FD3A0; --ok-soft:#14261D;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1217; --surface:#161B22; --surface-2:#1B212A;
+  --ink:#E9ECEF; --ink-2:#BFC6CE; --muted:#8B95A1;
+  --rule:#2A323C; --rule-2:#222932;
+  --accent:#F0656C; --accent-soft:#2E1A1C;
+  --signal:#E0B25E; --signal-soft:#2A2214; --signal-rule:#4A3C1E;
+  --ok:#6FD3A0; --ok-soft:#14261D;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif;
+  font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:Archivo,system-ui,sans-serif; margin:0; text-wrap:balance}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- top bar ---------- */
+.bar{
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:40;
+  background:var(--surface); border-bottom:1px solid var(--rule);
+}
+.bar-in{max-width:1280px; margin:0 auto; padding:12px 16px; display:flex; flex-wrap:wrap; gap:14px 20px; align-items:flex-end}
+.brandmark{display:flex; flex-direction:column; gap:1px; margin-right:auto}
+.brandmark .wm{font-family:Archivo; font-weight:700; font-size:17px; letter-spacing:-.01em}
+.brandmark .wm span{color:var(--accent)}
+.brandmark .sub{font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:500}
+.field{display:flex; flex-direction:column; gap:4px; min-width:0}
+.field label{font-size:10px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); font-weight:600}
+select,input[type=text],input[type=date],input[type=number]{
+  font:inherit; font-size:13px; color:var(--ink); background:var(--surface-2);
+  border:1px solid var(--rule); border-radius:5px; padding:7px 9px; min-width:150px;
+}
+select:focus-visible,input:focus-visible,button:focus-visible,.opt:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.hint{font-size:12px; color:var(--muted); padding-bottom:8px}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1280px; margin:0 auto; padding:20px 16px 40px; display:grid; grid-template-columns:minmax(0,1fr) 340px; gap:24px; align-items:start}
+@media (max-width:900px){ .wrap{grid-template-columns:minmax(0,1fr); padding-bottom:132px} }
+
+/* ---------- toolbar ---------- */
+.toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:14px}
+.count{font-size:12.5px; color:var(--muted); margin-right:auto}
+.count b{color:var(--ink); font-weight:600}
+.chips{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px}
+.chip{
+  font:inherit; font-size:12px; font-weight:500; cursor:pointer;
+  background:var(--surface); color:var(--ink-2); border:1px solid var(--rule);
+  border-radius:99px; padding:4px 11px;
+}
+.chip[aria-pressed="true"]{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+
+/* ---------- option groups ---------- */
+.group{margin-bottom:22px}
+.group-head{display:flex; align-items:baseline; gap:10px; padding-bottom:7px; border-bottom:2px solid var(--ink)}
+.group-head h2{font-size:12.5px; letter-spacing:.1em; text-transform:uppercase; font-weight:700}
+.group-head .n{font-size:11px; color:var(--muted)}
+.opt{
+  display:grid; grid-template-columns:22px minmax(0,1fr) auto; gap:0 12px;
+  padding:11px 12px 11px 10px; border-bottom:1px solid var(--rule-2);
+  cursor:pointer; align-items:start;
+}
+.opt:hover{background:var(--surface-2)}
+.opt.on{background:var(--surface); box-shadow:inset 3px 0 0 var(--accent)}
+.opt input{margin:2px 0 0; width:15px; height:15px; accent-color:var(--accent); cursor:pointer}
+.o-name{font-weight:600; font-size:14px; line-height:1.35}
+.o-meta{display:flex; flex-wrap:wrap; gap:4px 10px; margin-top:4px; font-size:11.5px; color:var(--muted)}
+.o-meta .code{color:var(--ink-2); font-weight:500}
+.o-money{text-align:right; white-space:nowrap}
+.o-total{font-family:"IBM Plex Mono"; font-weight:600; font-size:14px; font-variant-numeric:tabular-nums}
+.o-split{font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums; margin-top:3px}
+.flag{
+  grid-column:2/-1; margin-top:7px; display:flex; gap:7px; align-items:flex-start;
+  background:var(--signal-soft); border:1px solid var(--signal-rule); border-left-width:3px;
+  color:var(--signal); font-size:12px; padding:5px 9px; border-radius:3px;
+}
+.flag b{font-weight:600}
+.plink{color:var(--accent); text-decoration:none; border-bottom:1px solid currentColor; font-weight:500}
+.badge{
+  display:inline-block; vertical-align:2px; margin-left:7px; padding:1px 7px; border-radius:99px;
+  font-size:9.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+  background:var(--ok-soft); color:var(--ok); border:1px solid currentColor;
+}
+.badge.quote{background:var(--signal-soft); color:var(--signal)}
+.drop{
+  background:none; border:0; padding:0; font:inherit; font-size:11.5px; cursor:pointer;
+  color:var(--muted); text-decoration:underline; text-underline-offset:2px;
+}
+.drop:hover{color:var(--accent)}
+.drop.arm{color:var(--accent); font-weight:600}
+
+/* ---------- add-part dialog ---------- */
+.modal{position:fixed; inset:0; z-index:90; display:grid; place-items:center; padding:16px;
+  background:rgba(12,16,22,.5)}
+.modal-card{
+  background:var(--surface); border:1px solid var(--rule); border-radius:10px; box-shadow:var(--shadow);
+  width:min(580px,100%); max-height:88vh; overflow:auto;
+}
+.modal-head{padding:15px 18px 12px; border-bottom:1px solid var(--rule)}
+.modal-head h2{font-size:14px; letter-spacing:.04em; text-transform:uppercase}
+.modal-head p{margin:5px 0 0; font-size:12px; color:var(--muted)}
+.modal-body{padding:16px 18px; display:grid; grid-template-columns:1fr 1fr; gap:13px 14px}
+.modal-body .wide{grid-column:1/-1}
+.modal-body input,.modal-body select{width:100%; min-width:0}
+.brandset{display:flex; flex-wrap:wrap; gap:6px}
+.brandset label{
+  display:flex; align-items:center; gap:6px; font-size:12.5px; cursor:pointer;
+  border:1px solid var(--rule); border-radius:99px; padding:4px 11px 4px 9px; background:var(--surface-2);
+}
+.brandset label:has(input:checked){border-color:var(--accent); background:var(--accent-soft); color:var(--accent); font-weight:600}
+.brandset input{width:14px; height:14px; accent-color:var(--accent); margin:0}
+.keepbox{display:flex; gap:8px; align-items:flex-start; padding:10px 12px; border-radius:6px;
+  background:var(--surface-2); border:1px solid var(--rule)}
+.keepbox input{width:15px; height:15px; margin:1px 0 0; accent-color:var(--accent); flex:none}
+.keepbox span{font-size:12px; color:var(--muted)}
+.keepbox b{display:block; font-size:13px; color:var(--ink); font-weight:600; margin-bottom:1px}
+.modal-foot{padding:13px 18px; border-top:1px solid var(--rule); display:flex; gap:9px; justify-content:flex-end;
+  background:var(--surface-2)}
+.err{grid-column:1/-1; font-size:12.5px; color:var(--accent); font-weight:500}
+@media (max-width:560px){ .modal-body{grid-template-columns:1fr} }
+.empty{padding:40px 16px; text-align:center; color:var(--muted); border:1px dashed var(--rule); border-radius:8px}
+
+/* ---------- build panel ---------- */
+.panel{
+  position:sticky; top:calc(env(safe-area-inset-top,0px) + 78px);
+  background:var(--surface); border:1px solid var(--rule); border-radius:8px; box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.p-head{padding:13px 15px; border-bottom:1px solid var(--rule); display:flex; align-items:baseline; gap:8px}
+.p-head h2{font-size:12.5px; letter-spacing:.1em; text-transform:uppercase}
+.p-head .n{margin-left:auto; font-size:11px; color:var(--muted)}
+.p-meta{padding:12px 15px; border-bottom:1px solid var(--rule-2); display:grid; gap:9px}
+.p-list{max-height:34vh; overflow:auto; padding:4px 0}
+.p-row{display:flex; gap:8px; align-items:baseline; padding:6px 15px; font-size:12.5px}
+.p-row .nm{flex:1; min-width:0}
+.p-row .nm span{display:block; font-size:10.5px; color:var(--muted); font-family:"IBM Plex Mono"}
+.p-row .amt{font-family:"IBM Plex Mono"; font-variant-numeric:tabular-nums; font-size:12.5px}
+.p-row .x{background:none; border:0; color:var(--muted); cursor:pointer; font-size:15px; line-height:1; padding:0 2px}
+.p-row .x:hover{color:var(--accent)}
+.p-empty{padding:18px 15px; font-size:12.5px; color:var(--muted)}
+.p-extra{padding:11px 15px; border-top:1px solid var(--rule-2); display:grid; grid-template-columns:96px minmax(0,1fr); gap:9px 10px; align-items:end}
+.p-extra input{min-width:0; width:100%}
+.p-extra .x-amt{grid-column:1/-1; font-size:11.5px; color:var(--muted); font-variant-numeric:tabular-nums; margin-top:-2px}
+.p-extra .x-amt b{color:var(--ink-2); font-family:"IBM Plex Mono"; font-weight:600}
+.totals{padding:12px 15px; border-top:1px solid var(--rule); display:grid; gap:6px; background:var(--surface-2)}
+.t-row{display:flex; justify-content:space-between; font-size:12.5px; color:var(--ink-2)}
+.t-row .v{font-family:"IBM Plex Mono"; font-variant-numeric:tabular-nums}
+.t-grand{display:flex; justify-content:space-between; align-items:baseline; padding-top:9px; margin-top:3px; border-top:1px solid var(--rule)}
+.t-grand .l{font-family:Archivo; font-weight:600; font-size:12px; letter-spacing:.08em; text-transform:uppercase}
+.t-grand .v{font-family:"IBM Plex Mono"; font-weight:600; font-size:21px; font-variant-numeric:tabular-nums; letter-spacing:-.02em}
+.actions{padding:12px 15px; display:grid; gap:8px; border-top:1px solid var(--rule-2)}
+button.btn{
+  font:inherit; font-size:13px; font-weight:600; cursor:pointer; padding:9px 12px;
+  border-radius:5px; border:1px solid var(--rule); background:var(--surface-2); color:var(--ink);
+}
+button.btn:hover{border-color:var(--ink-2)}
+button.btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+button.btn.primary:hover{filter:brightness(1.08)}
+button.btn:disabled{opacity:.45; cursor:not-allowed}
+.toast{
+  position:fixed; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom,0px) + 22px);
+  background:var(--ink); color:var(--paper); padding:9px 16px; border-radius:10px; font-size:13px; z-index:99;
+  box-shadow:var(--shadow); max-width:min(720px, calc(100% - 32px)); text-align:center;
+  line-height:1.45; user-select:text; overflow-wrap:anywhere;
+}
+@media (prefers-reduced-motion:no-preference){ .toast{animation:pop .18s ease-out} }
+@keyframes pop{from{opacity:0; transform:translate(-50%,6px)}}
+
+@media (max-width:900px){
+  .panel{position:fixed; left:0; right:0; bottom:0; top:auto; border-radius:12px 12px 0 0; border-bottom:0; z-index:50; padding-bottom:env(safe-area-inset-bottom,0px)}
+  .p-meta,.p-list,.p-extra{display:none}
+  .panel.open .p-list{display:block}
+  .panel.open .p-meta,.panel.open .p-extra{display:grid}
+  .p-head{cursor:pointer}
+}
+
+/* ---------- print ---------- */
+.sheet{display:none}
+@media print{
+  .bar,.wrap,.toast{display:none !important}
+  .sheet{display:block; padding:0; color:#000; background:#fff}
+  .sheet h1{font-size:19px; margin-bottom:2px}
+  .sheet .sh-sub{font-size:11px; color:#444; margin-bottom:14px}
+  .sheet table{width:100%; border-collapse:collapse; font-size:10.5px}
+  .sheet th{text-align:left; border-bottom:1.5px solid #000; padding:5px 6px; font-size:9px; letter-spacing:.07em; text-transform:uppercase}
+  .sheet td{border-bottom:1px solid #ccc; padding:5px 6px; vertical-align:top}
+  .sheet td.r,.sheet th.r{text-align:right; font-variant-numeric:tabular-nums}
+  .sheet tfoot td{border-top:1.5px solid #000; border-bottom:0; font-weight:700; padding-top:7px}
+  .sheet .nt{font-size:9px; color:#555; font-style:italic}
+  @page{margin:14mm}
+}
+</style>
+
+<div class="bar">
+  <div class="bar-in">
+    <div class="brandmark">
+      <div class="wm">NERV<span>/</span>Options</div>
+      <div class="sub">Service Options Configurator</div>
+    </div>
+    <div class="field">
+      <label for="f-brand">Brand</label>
+      <select id="f-brand"></select>
+    </div>
+    <div class="field">
+      <label for="f-type">Vehicle Type</label>
+      <select id="f-type"></select>
+    </div>
+    <div class="field">
+      <label for="f-chassis">Chassis</label>
+      <select id="f-chassis"></select>
+    </div>
+    <div class="field">
+      <label for="f-search">Search</label>
+      <input type="text" id="f-search" placeholder="Name, code, part #" autocomplete="off">
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <main>
+    <div class="toolbar">
+      <div class="count" id="count"></div>
+      <button class="btn" id="add-part" type="button">+ Add Part</button>
+      <button class="btn" id="clear-filters" type="button">Reset filters</button>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div id="list"></div>
+  </main>
+
+  <aside class="panel" id="panel">
+    <div class="p-head" id="p-head">
+      <h2>Build Sheet</h2>
+      <div class="n" id="p-count">0 options</div>
+    </div>
+    <div class="p-meta">
+      <div class="field">
+        <label for="m-cust">Customer / Department</label>
+        <input type="text" id="m-cust" placeholder="e.g. Cayuga County EMS" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="m-unit">Unit / Stock #</label>
+        <input type="text" id="m-unit" placeholder="e.g. WC-24118" autocomplete="off">
+      </div>
+    </div>
+    <div class="p-list" id="p-list"></div>
+    <div class="p-extra">
+      <div class="field">
+        <label for="x-hrs">Add'l Hrs</label>
+        <input type="number" id="x-hrs" min="0" step="0.5" value="0" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label for="x-why">Reason</label>
+        <input type="text" id="x-why" placeholder="e.g. Medix adder, prep" autocomplete="off">
+      </div>
+      <div class="x-amt" id="x-amt"></div>
+    </div>
+    <div class="totals">
+      <div class="t-row"><span>Parts</span><span class="v" id="t-parts">$0.00</span></div>
+      <div class="t-row"><span>Labor <span id="t-hrs" class="num"></span></span><span class="v" id="t-labor">$0.00</span></div>
+      <div class="t-grand"><span class="l">Total Sell</span><span class="v" id="t-total">$0.00</span></div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="act-print" type="button" disabled>Download Build Sheet (PDF)</button>
+      <button class="btn" id="act-word" type="button" disabled>Copy for Word / Email</button>
+      <button class="btn" id="act-copy" type="button" disabled>Copy for Excel</button>
+      <button class="btn" id="act-clear" type="button" disabled>Clear build</button>
+    </div>
+  </aside>
+</div>
+
+<div class="sheet" id="sheet"></div>
+
+<div class="modal" id="modal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-head">
+      <h2 id="modal-title">Add a Part</h2>
+      <p>For something not in the options book. Labor is priced at the shop rate.</p>
+    </div>
+    <form id="add-form">
+      <div class="modal-body">
+        <div class="field wide">
+          <label for="n-name">Option Name</label>
+          <input type="text" id="n-name" autocomplete="off" placeholder="e.g. Whelen M9 Scene Light">
+        </div>
+        <div class="field">
+          <label for="n-cat">Category</label>
+          <input type="text" id="n-cat" list="cat-list" autocomplete="off" placeholder="e.g. Exterior">
+          <datalist id="cat-list"></datalist>
+        </div>
+        <div class="field">
+          <label for="n-code">Option Code</label>
+          <input type="text" id="n-code" autocomplete="off" placeholder="auto">
+        </div>
+        <div class="field wide">
+          <label>Brands That Offer It</label>
+          <div class="brandset" id="n-brands"></div>
+        </div>
+        <div class="field">
+          <label for="n-type">Vehicle Type</label>
+          <select id="n-type"></select>
+        </div>
+        <div class="field">
+          <label for="n-chassis">Chassis</label>
+          <input type="text" id="n-chassis" list="chassis-list" autocomplete="off" placeholder="e.g. Ford F-Series">
+          <datalist id="chassis-list"></datalist>
+        </div>
+        <div class="field">
+          <label for="n-part">Part #</label>
+          <input type="text" id="n-part" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="n-parts">Parts Sell Price</label>
+          <input type="number" id="n-parts" min="0" step="0.01" value="0" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label for="n-hrs">Labor Hours</label>
+          <input type="number" id="n-hrs" min="0" step="0.5" value="0" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label for="n-line">Line Total</label>
+          <input type="text" id="n-line" readonly tabindex="-1">
+        </div>
+        <div class="field wide">
+          <label for="n-notes">Notes / Dependencies</label>
+          <input type="text" id="n-notes" autocomplete="off" placeholder="Optional">
+        </div>
+        <label class="keepbox wide" id="n-keepbox">
+          <input type="checkbox" id="n-keep">
+          <span><b>Save to the catalog</b>Keeps it for everyone with this link, filtered by brand and type like any other option. Leave unchecked for a one-off line on this quote only.</span>
+        </label>
+        <div class="err" id="n-err" hidden></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" type="button" id="n-cancel">Cancel</button>
+        <button class="btn primary" type="submit" id="n-save">Add to Build</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const OPTIONS = [{"code":"EXT-001A","cat":"Exterior","name":"Front Brush Guard","brands":["Wheeled Coach","Braun","Demers","Medix"],"vtype":"Type 1","chassis":"Ford F-Series","part":"3399","parts":1059.99,"hrs":4.0,"rate":175.0,"labor":700.0,"total":1759.99,"photo":"","detail":"","notes":""},{"code":"EXT-001B","cat":"Exterior","name":"Front Brush Guard","brands":["Wheeled Coach","Braun","Demers","Medix"],"vtype":"Type 1","chassis":"Chevy Silverado","part":"3399","parts":1059.99,"hrs":4.0,"rate":175.0,"labor":700.0,"total":1759.99,"photo":"","detail":"","notes":""},{"code":"EXT-001C","cat":"Exterior","name":"Front Brush Guard","brands":["Wheeled Coach","Demers"],"vtype":"Type 2","chassis":"Ford Transit","part":"1240","parts":1350.0,"hrs":4.0,"rate":175.0,"labor":700.0,"total":2050.0,"photo":"https://nervinc.sharepoint.com/:i:/r/sites/NERVOptionsBook/Shared%20Documents/Options%20Book%20Photos/Exterior/EXT-001C_Primary.jpg?csf=1&web=1&e=2jj1sk","detail":"","notes":""},{"code":"EXT-001D","cat":"Exterior","name":"Front Brush Guard","brands":["Wheeled Coach","Braun"],"vtype":"Type 2","chassis":"Mercedes Sprinter","part":"4081","parts":1109.0,"hrs":4.0,"rate":175.0,"labor":700.0,"total":1809.0,"photo":"","detail":"","notes":""},{"code":"EXT-001E","cat":"Exterior","name":"Front Brush Guard","brands":["Wheeled Coach","Braun","Demers","Medix"],"vtype":"Type 3","chassis":"Ford E-Series","part":"3254","parts":674.99,"hrs":4.0,"rate":175.0,"labor":700.0,"total":1374.99,"photo":"https://nervinc.sharepoint.com/:i:/s/NERVOptionsBook/IQDigqSXvcdSQqObIJ6AAQEDAaJpxJlxU-uPlUL2PcyTpLQ?e=W1EZ6n","detail":"","notes":""},{"code":"EXT-001F","cat":"Exterior","name":"Front Brush Guard","brands":["Braun","Demers"],"vtype":"Type 3","chassis":"Chevy Express","part":"4027","parts":1059.99,"hrs":4.0,"rate":175.0,"labor":700.0,"total":1759.99,"photo":"https://nervinc.sharepoint.com/:i:/s/NERVOptionsBook/IQCVhaoeCAADRIC_C1-FrSOLAYisk6CVbz7uS09-VVCdvCE?e=LjJHH3","detail":"","notes":""},{"code":"OXY-001","cat":"Oxygen","name":"Portable O2 Brackets","brands":["Demers"],"vtype":"All","chassis":"Type 1 / 2 / 3","part":"3233","parts":400.0,"hrs":1.0,"rate":175.0,"labor":175.0,"total":575.0,"photo":"https://nervinc.sharepoint.com/:i:/r/sites/NERVOptionsBook/Shared%20Documents/Options%20Book%20Photos/Exterior/OXY-001_Primary.JPG?csf=1&web=1&e=Dl31CV","detail":"","notes":""},{"code":"ELEC-001","cat":"Electrical","name":"110V Electrical Outlet (Interior)","brands":["Demers","Medix"],"vtype":"All","chassis":"Type 1 / 2 / 3","part":"N/A","parts":150.0,"hrs":3.0,"rate":175.0,"labor":525.0,"total":675.0,"photo":"https://nervinc.sharepoint.com/:i:/r/sites/NERVOptionsBook/Shared%20Documents/Options%20Book%20Photos/Exterior/ELEC-002A_Primary.jpg?csf=1&web=1&e=FWHRn4","detail":"","notes":""},{"code":"ELEC-002A","cat":"Shoreline / Electrical","name":"Auto Eject Shoreline","brands":["Demers","Medix"],"vtype":"Type 1","chassis":"All Type 1 chassis","part":"521","parts":439.99,"hrs":3.0,"rate":175.0,"labor":525.0,"total":964.99,"photo":"","detail":"","notes":""},{"code":"ELEC-002B","cat":"Shoreline / Electrical","name":"Auto Eject Shoreline","brands":["Wheeled Coach","Braun","Demers"],"vtype":"Type 2","chassis":"Transit/Sprinter","part":"521","parts":439.99,"hrs":3.0,"rate":175.0,"labor":525.0,"total":964.99,"photo":"https://nervinc.sharepoint.com/:i:/r/sites/NERVOptionsBook/Shared%20Documents/Options%20Book%20Photos/Exterior/ELEC-002B_Primary.JPG?csf=1&web=1&e=Zqy30F","detail":"","notes":""},{"code":"ELEC-002C","cat":"Shoreline / Electrical","name":"Auto Eject Shoreline","brands":["Braun","Medix"],"vtype":"Type 3","chassis":"E-Series/Express","part":"521","parts":439.99,"hrs":3.0,"rate":175.0,"labor":525.0,"total":964.99,"photo":"","detail":"","notes":""},{"code":"CAM-001A","cat":"Safety / Camera","name":"Back-Up Camera System","brands":["Braun","Medix"],"vtype":"Type 1","chassis":"All Type 1 chassis","part":"4250","parts":655.56,"hrs":2.5,"rate":175.0,"labor":437.5,"total":1093.06,"photo":"","detail":"","notes":"Medix add 3 hours."},{"code":"CAM-001B","cat":"Safety / Camera","name":"Back-Up Camera System","brands":["Wheeled Coach","Braun"],"vtype":"Type 2","chassis":"Transit/Sprinter","part":"4250","parts":655.56,"hrs":2.5,"rate":175.0,"labor":437.5,"total":1093.06,"photo":"","detail":"","notes":""},{"code":"CAM-001C","cat":"Safety / Camera","name":"Back-Up Camera System","brands":["Wheeled Coach","Braun"],"vtype":"Type 3","chassis":"E-Series/Express","part":"4250","parts":655.56,"hrs":2.5,"rate":175.0,"labor":437.5,"total":1093.06,"photo":"","detail":"","notes":""},{"code":"OXY-002","cat":"Oxygen","name":"Oxygen outlet","brands":["Wheeled Coach","Braun","Demers","Medix"],"vtype":"All","chassis":"Type 1 / 2 / 3","part":"1225","parts":142.99,"hrs":2.0,"rate":175.0,"labor":350.0,"total":492.99,"photo":"","detail":"","notes":"Medix addd 2 hours"},{"code":"ELEC-003","cat":"Electrical","name":"Vanner Inverter 1100 watt","brands":["Wheeled Coach","Braun","Demers","Medix"],"vtype":"All","chassis":"Type 1 / 2 / 3","part":"691","parts":2019.0,"hrs":2.0,"rate":175.0,"labor":350.0,"total":2369.0,"photo":"","detail":"","notes":"Consider pre-wire if not double time."},{"code":"ELEC-004","cat":"Electrical","name":"Vanner Inverter 2000 watt","brands":["Demers"],"vtype":"All","chassis":"Type 1 / 2 / 3","part":"9243","parts":3056.99,"hrs":3.0,"rate":175.0,"labor":525.0,"total":3581.99,"photo":"","detail":"","notes":""},{"code":"ELEC-005","cat":"Electrical","name":"Xantrex Inverter 2000 watt","brands":["Wheeled Coach","Braun","Demers","Medix"],"vtype":"All","chassis":"Type 1 / 2 / 3","part":"9687","parts":1419.0,"hrs":3.0,"rate":175.0,"labor":525.0,"total":1944.0,"photo":"","detail":"","notes":""},{"code":"ELEC-006","cat":"Electrical","name":"Xantrex Inverter 1000 watt","brands":["Wheeled Coach","Braun","Demers"],"vtype":"All","chassis":"Type 1 / 2 / 3","part":"9680","parts":919.99,"hrs":2.0,"rate":175.0,"labor":350.0,"total":1269.99,"photo":"","detail":"","notes":""},{"code":"SUSP-001","cat":"Suspension","name":"Liquid Spring Suspension","brands":["Braun","Demers"],"vtype":"Type 1","chassis":"Ford F-Series","part":"1155","parts":16200.0,"hrs":32.0,"rate":175.0,"labor":5600.0,"total":21800.0,"photo":"","detail":"","notes":"F-series 4x4 only"},{"code":"SUSP-001A","cat":"Suspension","name":"Liquid Spring Suspension","brands":["Wheeled Coach","Braun","Demers"],"vtype":"Type 1","chassis":"Chevy Silverado","part":"1153","parts":14100.0,"hrs":32.0,"rate":175.0,"labor":5600.0,"total":19700.0,"photo":"","detail":"","notes":""},{"code":"SUSP-001B","cat":"Suspension","name":"Liquid Spring Suspension","brands":["Wheeled Coach","Braun","Demers"],"vtype":"Type 1","chassis":"Ford F-Series","part":"1182","parts":15800.0,"hrs":32.0,"rate":175.0,"labor":5600.0,"total":21400.0,"photo":"","detail":"","notes":"F-Series 4x2 only"},{"code":"INT-001","cat":"Interior","name":"RX Fab Bari Load","brands":["Braun","Demers"],"vtype":"All","chassis":"All Chassis","part":"9991","parts":10500.0,"hrs":10.0,"rate":175.0,"labor":1750.0,"total":12250.0,"photo":"","detail":"","notes":""}];
+
+const $ = id => document.getElementById(id);
+const money = n => '$' + n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const hrs = n => (Math.round(n*100)/100).toLocaleString('en-US');
+
+// Parts added from the page. `catalogParts` come from the shared store and are
+// visible to everyone; `localParts` live on this quote only. A sheet option
+// always wins over a stored one with the same code, so a part that later lands
+// in the real options book takes over from its stand-in automatically.
+let catalogParts = [];
+let localParts   = [];
+function allOptions(){
+  const sheetCodes = new Set(OPTIONS.map(o=>o.code));
+  return OPTIONS
+    .concat(catalogParts.filter(o=>!sheetCodes.has(o.code)))
+    .concat(localParts.filter(o=>!sheetCodes.has(o.code)));
+}
+const brandList = ()=>[...new Set(allOptions().flatMap(o=>o.brands))].sort();
+const typeList  = ()=>[...new Set(allOptions().map(o=>o.vtype).filter(t=>t&&t!=='All'))].sort();
+
+// Shop labor rate: the rate carried on the option rows themselves (they are uniform today).
+const RATE = (()=>{
+  const tally = {};
+  OPTIONS.forEach(o=>{ if(o.rate) tally[o.rate] = (tally[o.rate]||0)+1; });
+  const top = Object.keys(tally).sort((a,b)=>tally[b]-tally[a])[0];
+  return top ? Number(top) : 0;
+})();
+
+const state = {brand:'', vtype:'', chassis:'', q:'', cats:new Set(), sel:new Set(),
+               cust:'', unit:'', xhrs:0, xwhy:''};
+
+/* ---- restore per-browser draft ---- */
+try{
+  const raw = localStorage.getItem('nerv-build');
+  if(raw){ const d = JSON.parse(raw);
+    state.brand=d.brand||''; state.vtype=d.vtype||''; state.chassis=d.chassis||'';
+    state.cust=d.cust||''; state.unit=d.unit||'';
+    state.xhrs=Number(d.xhrs)||0; state.xwhy=d.xwhy||'';
+    localParts = Array.isArray(d.localParts) ? d.localParts : [];
+    (d.sel||[]).forEach(c=>state.sel.add(c));
+  }
+}catch(e){}
+function save(){
+  try{ localStorage.setItem('nerv-build', JSON.stringify({
+    brand:state.brand, vtype:state.vtype, chassis:state.chassis,
+    cust:state.cust, unit:state.unit, sel:[...state.sel],
+    xhrs:state.xhrs, xwhy:state.xwhy, localParts:localParts
+  })); }catch(e){}
+}
+
+/* ---- filtering ---- */
+// A row's Vehicle Type of "All" means it fits Type 1, 2 and 3.
+function fitsVehicle(o){
+  if(state.brand && !o.brands.includes(state.brand)) return false;
+  if(state.vtype && o.vtype !== 'All' && o.vtype !== state.vtype) return false;
+  return true;
+}
+function visible(){
+  const q = state.q.trim().toLowerCase();
+  return allOptions().filter(o=>{
+    if(!fitsVehicle(o)) return false;
+    if(state.chassis && o.chassis !== state.chassis) return false;
+    if(state.cats.size && !state.cats.has(o.cat)) return false;
+    if(q && !(o.name+' '+o.code+' '+o.part+' '+o.cat).toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+/* ---- selects ---- */
+function fillSelect(el, items, allLabel, val){
+  el.innerHTML = '';
+  const o0 = new Option(allLabel, ''); el.add(o0);
+  items.forEach(i=>el.add(new Option(i,i)));
+  el.value = items.includes(val) ? val : '';
+}
+function syncChassis(){
+  const pool = allOptions().filter(fitsVehicle);
+  const list = [...new Set(pool.map(o=>o.chassis).filter(Boolean))].sort();
+  fillSelect($('f-chassis'), list, 'All chassis', state.chassis);
+  state.chassis = $('f-chassis').value;
+}
+function syncFilters(){
+  fillSelect($('f-brand'), brandList(), 'All brands', state.brand);
+  fillSelect($('f-type'), typeList(), 'All types', state.vtype);
+  state.brand = $('f-brand').value;
+  state.vtype = $('f-type').value;
+  syncChassis();
+}
+syncFilters();
+$('m-cust').value = state.cust; $('m-unit').value = state.unit;
+$('x-hrs').value = state.xhrs || 0; $('x-why').value = state.xwhy;
+
+/* ---- render ---- */
+function render(){
+  const rows = visible();
+  const pool = allOptions().filter(fitsVehicle);
+  const label = [state.brand||'all brands', state.vtype||'all types'].join(' · ');
+  $('count').innerHTML = '<b>'+rows.length+'</b> option'+(rows.length===1?'':'s')+' available for '+label;
+
+  // category chips from the brand/type pool, so a chip never yields zero
+  const cats = [...new Set(pool.map(o=>o.cat))].sort();
+  state.cats.forEach(c=>{ if(!cats.includes(c)) state.cats.delete(c); });
+  $('chips').innerHTML = cats.map(c=>
+    '<button class="chip" type="button" data-cat="'+esc(c)+'" aria-pressed="'+state.cats.has(c)+'">'+esc(c)+'</button>'
+  ).join('');
+
+  const list = $('list');
+  if(!rows.length){
+    list.innerHTML = '<div class="empty">No options match these filters.<br>Try clearing the chassis or category filter.</div>';
+  } else {
+    const groups = {};
+    rows.forEach(o=>(groups[o.cat] = groups[o.cat]||[]).push(o));
+    list.innerHTML = Object.keys(groups).sort().map(cat=>
+      '<section class="group"><div class="group-head"><h2>'+esc(cat)+'</h2>'+
+      '<span class="n">'+groups[cat].length+'</span></div>' +
+      groups[cat].map(optRow).join('') + '</section>'
+    ).join('');
+  }
+  renderPanel();
+}
+
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function optRow(o){
+  const on = state.sel.has(o.code);
+  const typeLabel = o.vtype === 'All' ? 'Type 1 / 2 / 3' : o.vtype;
+  // Some rows repeat the type wording in the Chassis column ("Type 1 / 2 / 3"); show it once.
+  const chassisLabel = (o.chassis && o.chassis.replace(/\s/g,'') !== typeLabel.replace(/\s/g,'')) ? o.chassis : '';
+  const meta = [
+    '<span class="code mono">'+esc(o.code)+'</span>',
+    o.part && o.part!=='N/A' ? 'Part '+esc(o.part) : '',
+    esc(chassisLabel),
+    esc(typeLabel),
+    esc(o.brands.join(', '))
+  ].filter(Boolean).map(m=>'<span>'+m+'</span>').join('');
+  const photo = o.photo ? ' <a class="plink" href="'+esc(o.photo)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">Photo</a>' : '';
+  const flag = o.notes ? '<div class="flag"><b>Note</b><span>'+esc(o.notes)+'</span></div>' : '';
+  const badge = o.custom
+    ? '<span class="badge'+(o.scope==='catalog'?'':' quote')+'">'+
+      (o.scope==='catalog' ? 'Added' : 'This quote')+'</span>' : '';
+  const drop = o.custom
+    ? '<button class="drop" type="button" data-remove="'+esc(o.code)+'">Remove</button>' : '';
+  return '<label class="opt'+(on?' on':'')+'">' +
+    '<input type="checkbox" data-code="'+esc(o.code)+'"'+(on?' checked':'')+'>' +
+    '<div><div class="o-name">'+esc(o.name)+badge+photo+'</div>' +
+    '<div class="o-meta">'+meta+drop+'</div></div>' +
+    '<div class="o-money"><div class="o-total">'+money(o.total)+'</div>' +
+    '<div class="o-split">'+money(o.parts)+' parts · '+hrs(o.hrs)+' hr</div></div>' +
+    flag + '</label>';
+}
+
+function selected(){
+  const all = allOptions();
+  return [...state.sel].map(c=>all.find(o=>o.code===c)).filter(Boolean);
+}
+
+function renderPanel(){
+  const sel = selected();
+  const parts = sel.reduce((a,o)=>a+o.parts,0);
+  const xHrs  = Math.max(0, Number(state.xhrs) || 0);
+  const xAmt  = xHrs * RATE;
+  const labor = sel.reduce((a,o)=>a+o.labor,0) + xAmt;
+  const hours = sel.reduce((a,o)=>a+o.hrs,0) + xHrs;
+  const total = sel.reduce((a,o)=>a+o.total,0) + xAmt;
+
+  $('x-amt').innerHTML = xHrs
+    ? hrs(xHrs)+' hr &times; '+money(RATE)+' = <b>'+money(xAmt)+'</b>'
+    : 'Added to the build at '+money(RATE)+'/hr.';
+
+  $('p-count').textContent = sel.length + ' option' + (sel.length===1?'':'s');
+  $('p-list').innerHTML = sel.length
+    ? sel.map(o=>'<div class="p-row"><div class="nm">'+esc(o.name)+'<span>'+esc(o.code)+'</span></div>'+
+        '<div class="amt">'+money(o.total)+'</div>'+
+        '<button class="x" type="button" data-drop="'+esc(o.code)+'" aria-label="Remove '+esc(o.name)+'">&times;</button></div>').join('')
+    : '<div class="p-empty">No options selected yet. Check an option to add it to the build.</div>';
+
+  $('t-parts').textContent = money(parts);
+  $('t-labor').textContent = money(labor);
+  $('t-hrs').textContent = sel.length ? '(' + hrs(hours) + ' hr)' : '';
+  $('t-total').textContent = money(total);
+
+  const live = sel.length || xHrs > 0;
+  ['act-print','act-word','act-copy','act-clear'].forEach(id=>$(id).disabled = !live);
+  buildSheet(sel, parts, labor, hours, total, xHrs, xAmt);
+}
+
+function buildSheet(sel, parts, labor, hours, total, xHrs, xAmt){
+  const head = [state.cust||'—', state.unit ? 'Unit '+state.unit : '', state.brand||'All brands',
+                state.vtype||'All types', new Date().toLocaleDateString('en-US')].filter(Boolean).join('  ·  ');
+  $('sheet').innerHTML =
+    '<h1>NERV Inc. — Service Options Build Sheet</h1><div class="sh-sub">'+esc(head)+'</div>' +
+    '<table><thead><tr><th>Code</th><th>Option</th><th>Chassis</th><th class="r">Part #</th>' +
+    '<th class="r">Parts</th><th class="r">Hrs</th><th class="r">Labor</th><th class="r">Total</th></tr></thead><tbody>' +
+    sel.map(o=>'<tr><td>'+esc(o.code)+'</td><td>'+esc(o.name)+
+      (o.notes?'<div class="nt">'+esc(o.notes)+'</div>':'')+'</td><td>'+esc(o.chassis)+'</td>'+
+      '<td class="r">'+esc(o.part)+'</td><td class="r">'+money(o.parts)+'</td><td class="r">'+hrs(o.hrs)+
+      '</td><td class="r">'+money(o.labor)+'</td><td class="r">'+money(o.total)+'</td></tr>').join('') +
+    (xHrs ? '<tr><td>—</td><td>Additional labor'+
+      (state.xwhy?'<div class="nt">'+esc(state.xwhy)+'</div>':'')+'</td><td></td><td class="r"></td>'+
+      '<td class="r">—</td><td class="r">'+hrs(xHrs)+'</td><td class="r">'+money(xAmt)+
+      '</td><td class="r">'+money(xAmt)+'</td></tr>' : '') +
+    '</tbody><tfoot><tr><td colspan="4">'+sel.length+' options'+(xHrs?' + added labor':'')+'</td><td class="r">'+money(parts)+
+    '</td><td class="r">'+hrs(hours)+'</td><td class="r">'+money(labor)+'</td><td class="r">'+money(total)+
+    '</td></tr></tfoot></table>';
+}
+
+/* ---------------------------------------------------------------
+   Adding a part. A part is either a one-off line on this quote or a
+   catalog entry saved to the artifact's shared store, where everyone
+   with the link sees it.
+----------------------------------------------------------------*/
+let store = null;                       // shared store, null when unavailable
+const CAT_PATH = 'custom_options';
+
+function codeOk(s){ return /^[A-Za-z0-9_.~:@+-]{1,60}$/.test(s); }
+function nextCode(){
+  const taken = new Set(allOptions().map(o=>o.code.toUpperCase()));
+  let n = 1, c;
+  do { c = 'CUS-' + String(n++).padStart(3,'0'); } while(taken.has(c));
+  return c;
+}
+function toOption(raw, scope){
+  const parts = Math.max(0, Number(raw.parts) || 0);
+  const h     = Math.max(0, Number(raw.hrs) || 0);
+  return {
+    code: raw.code, cat: raw.cat || 'Added Parts', name: raw.name,
+    brands: raw.brands.slice(), vtype: raw.vtype || 'All', chassis: raw.chassis || '',
+    part: raw.part || '', parts: parts, hrs: h, rate: RATE,
+    labor: h * RATE, total: parts + h * RATE,
+    photo: '', detail: '', notes: raw.notes || '',
+    custom: true, scope: scope
+  };
+}
+
+/* ---- dialog ---- */
+const modal = $('modal');
+function openModal(){
+  $('cat-list').innerHTML = [...new Set(allOptions().map(o=>o.cat))].sort()
+    .map(c=>'<option value="'+esc(c)+'"></option>').join('');
+  $('chassis-list').innerHTML = [...new Set(allOptions().map(o=>o.chassis).filter(Boolean))].sort()
+    .map(c=>'<option value="'+esc(c)+'"></option>').join('');
+  $('n-brands').innerHTML = brandList().map(b=>
+    '<label><input type="checkbox" value="'+esc(b)+'"'+
+    (state.brand && b===state.brand ? ' checked':'')+'>'+esc(b)+'</label>').join('');
+  fillSelect($('n-type'), typeList(), 'All types (1 / 2 / 3)', state.vtype);
+
+  $('n-name').value=''; $('n-cat').value=''; $('n-code').value='';
+  $('n-chassis').value = state.chassis || '';
+  $('n-part').value=''; $('n-parts').value='0'; $('n-hrs').value='0'; $('n-notes').value='';
+  $('n-keep').checked = false;
+  $('n-err').hidden = true;
+  $('n-keepbox').hidden = !store;
+  syncLine();
+  modal.hidden = false;
+  $('n-name').focus();
+}
+function closeModal(){ modal.hidden = true; $('add-part').focus(); }
+function syncLine(){
+  const p = Math.max(0, Number($('n-parts').value)||0);
+  const h = Math.max(0, Number($('n-hrs').value)||0);
+  $('n-line').value = money(p + h*RATE) + (h ? '  ('+hrs(h)+' hr @ '+money(RATE)+')' : '');
+}
+
+$('add-part').addEventListener('click', openModal);
+$('n-cancel').addEventListener('click', closeModal);
+modal.addEventListener('click', e=>{ if(e.target === modal) closeModal(); });
+document.addEventListener('keydown', e=>{ if(e.key === 'Escape' && !modal.hidden) closeModal(); });
+$('n-parts').addEventListener('input', syncLine);
+$('n-hrs').addEventListener('input', syncLine);
+
+$('add-form').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const fail = m=>{ const el=$('n-err'); el.textContent=m; el.hidden=false; };
+  const name = $('n-name').value.trim();
+  const brands = [...$('n-brands').querySelectorAll('input:checked')].map(i=>i.value);
+  let code = $('n-code').value.trim().toUpperCase();
+
+  if(!name)          return fail('Give the part a name.');
+  if(!brands.length) return fail('Pick at least one brand that offers it.');
+  if(code && !codeOk(code))
+    return fail('A code can use letters, numbers and - _ . ~ : @ + only.');
+  if(!code) code = nextCode();
+  if(allOptions().some(o=>o.code.toUpperCase() === code))
+    return fail('Code ' + code + ' is already in use. Pick another, or leave it blank.');
+
+  const keep = store && $('n-keep').checked;
+  const opt = toOption({
+    code: code, cat: $('n-cat').value.trim(), name: name, brands: brands,
+    vtype: $('n-type').value, chassis: $('n-chassis').value.trim(),
+    part: $('n-part').value.trim(), parts: $('n-parts').value, hrs: $('n-hrs').value,
+    notes: $('n-notes').value.trim()
+  }, keep ? 'catalog' : 'build');
+
+  if(keep){
+    const btn = $('n-save'); btn.disabled = true; btn.textContent = 'Saving...';
+    try{
+      await store.collection(CAT_PATH).doc(code).set(opt);
+    }catch(err){
+      btn.disabled = false; btn.textContent = 'Add to Build';
+      const c = err && err.code;
+      return fail(c === 'quota_exceeded' ? 'The catalog is full — remove a part first.'
+                : c === 'invalid_argument' ? 'You do not have permission to save to the catalog here.'
+                : 'Could not save to the catalog. Try again, or leave the box unchecked.');
+    }
+    btn.disabled = false; btn.textContent = 'Add to Build';
+    // The store subscription delivers it; hold a copy so it shows even if that lags.
+    if(!catalogParts.some(o=>o.code === code)) catalogParts = catalogParts.concat([opt]);
+  } else {
+    localParts = localParts.concat([opt]);
+  }
+
+  state.sel.add(code);
+  closeModal(); save(); syncFilters(); render();
+  toast(keep ? 'Added and saved to the catalog' : 'Added to this build');
+});
+
+/* ---- remove a part (two-click, no blocking dialog) ---- */
+let armed = null;
+$('list').addEventListener('click', async e=>{
+  const b = e.target.closest('[data-remove]');
+  if(!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const code = b.dataset.remove;
+  if(armed !== code){
+    if(armed){ const old = $('list').querySelector('[data-remove="'+armed+'"]');
+               if(old){ old.textContent='Remove'; old.classList.remove('arm'); } }
+    armed = code; b.textContent = 'Remove — sure?'; b.classList.add('arm');
+    setTimeout(()=>{ if(armed === code){ armed = null; b.textContent='Remove'; b.classList.remove('arm'); } }, 4000);
+    return;
+  }
+  armed = null;
+  const fromCatalog = catalogParts.some(o=>o.code === code);
+  localParts   = localParts.filter(o=>o.code !== code);
+  catalogParts = catalogParts.filter(o=>o.code !== code);
+  state.sel.delete(code);
+  save(); syncFilters(); render();
+  if(fromCatalog && store){
+    try{ await store.collection(CAT_PATH).doc(code).delete(); toast('Removed from the catalog'); }
+    catch(err){ toast('Removed here, but the catalog copy stayed'); }
+  } else toast('Part removed');
+});
+
+/* ---- shared store: subscribe once ---- */
+(async ()=>{
+  try { store = await window.claude?.use?.('db'); } catch(e) { store = null; }
+  if(!store) return;
+  store.collection(CAT_PATH).onSnapshot(
+    snap=>{
+      catalogParts = snap.docs.map(d=>d.data()).filter(o=>o && o.code && o.name)
+        .map(o=>Object.assign({}, o, {custom:true, scope:'catalog'}));
+      syncFilters(); render();
+    },
+    ()=>{ /* subscription died; the page keeps working on what it has */ }
+  );
+})();
+
+/* ---------------------------------------------------------------
+   Build-sheet PDF. Written directly rather than with a PDF library:
+   the page runs under a CSP that only admits a couple of script
+   hosts, and a library that fails to load takes the export with it.
+   Helvetica is a base-14 font, so nothing needs embedding.
+----------------------------------------------------------------*/
+const HELV = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,
+556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,
+1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,
+667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,
+333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,
+556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+const HELVB = [278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278,
+556,556,556,556,556,556,556,556,556,556,333,333,584,584,584,611,
+975,722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,
+667,778,722,667,611,722,667,944,667,667,611,333,278,333,584,556,
+333,556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,
+611,611,389,556,333,611,556,778,556,556,500,389,280,389,584];
+
+function san(s){
+  return String(s == null ? '' : s)
+    .replace(/[‐-―]/g,'-').replace(/[‘’]/g,"'")
+    .replace(/[“”]/g,'"').replace(/·/g,'-')
+    .replace(/×/g,'x').replace(/…/g,'...').replace(/[^\x20-\x7E]/g,'');
+}
+function pesc(s){ return san(s).replace(/([\\()])/g,'\\$1'); }
+function tw(s, size, bold){
+  const t = bold ? HELVB : HELV; let w = 0;
+  s = san(s);
+  for(let i=0;i<s.length;i++){
+    const c = s.charCodeAt(i);
+    w += (c>=32 && c<=126) ? t[c-32] : 556;
+  }
+  return w * size / 1000;
+}
+function wrapText(s, size, bold, max){
+  const words = san(s).split(/\s+/).filter(Boolean);
+  const out = []; let line = '';
+  words.forEach(w=>{
+    const t = line ? line+' '+w : w;
+    if(tw(t,size,bold) <= max) line = t;
+    else { if(line) out.push(line); line = w; }
+  });
+  if(line) out.push(line);
+  return out.length ? out : [''];
+}
+function clip(s, size, bold, max){
+  s = san(s);
+  if(tw(s,size,bold) <= max) return s;
+  while(s.length && tw(s+'...',size,bold) > max) s = s.slice(0,-1);
+  return s + '...';
+}
+
+function makePdf(sel, parts, labor, hours, total, xHrs, xAmt){
+  const W = 792, H = 612, M = 36;
+  const COLS = [['Code',66,'l'],['Option',186,'l'],['Category',86,'l'],['Chassis',92,'l'],
+                ['Part #',44,'l'],['Parts',60,'r'],['Hrs',32,'r'],['Labor',60,'r'],['Total',68,'r']];
+  const X = []; let cx = M;
+  COLS.forEach(c=>{ X.push(cx); cx += c[1]; });
+  const RIGHT = cx;
+
+  const pages = []; let ops = [], y = 0;
+  const T = (s,px,py,size,bold,gray)=>ops.push(
+    'BT /'+(bold?'F2':'F1')+' '+size+' Tf '+(gray||'0')+' g '+
+    px.toFixed(2)+' '+py.toFixed(2)+' Td ('+pesc(s)+') Tj ET');
+  const TR = (s,rx,py,size,bold,gray)=>T(s, rx - tw(s,size,bold), py, size, bold, gray);
+  const RULE = (py,w,g)=>ops.push((g||'0.78')+' G '+w+' w '+M+' '+py.toFixed(2)+' m '+
+    RIGHT+' '+py.toFixed(2)+' l S');
+  const cell = (c,s,py,size,bold,gray)=>{
+    if(COLS[c][2]==='r') TR(s, X[c]+COLS[c][1]-6, py, size, bold, gray);
+    else T(clip(s,size,bold,COLS[c][1]-8), X[c], py, size, bold, gray);
+  };
+
+  const head = [state.cust || 'No customer', state.unit ? 'Unit '+state.unit : '',
+                state.brand || 'All brands', state.vtype || 'All types',
+                new Date().toLocaleDateString('en-US')].filter(Boolean).join('   -   ');
+
+  function newPage(first){
+    if(ops.length) pages.push(ops);
+    ops = []; y = H - M;
+    T('NERV Inc. - Service Options Build Sheet', M, y-14, 15, true); y -= 20;
+    T(first ? head : head+'  (continued)', M, y-10, 9, false, '0.42'); y -= 24;
+    RULE(y, 1.2, '0.12'); y -= 13;
+    COLS.forEach((c,i)=>cell(i, c[0].toUpperCase(), y, 7.5, true, '0.35'));
+    y -= 6; RULE(y, 1.2, '0.12'); y -= 15;
+  }
+  newPage(true);
+
+  sel.forEach(o=>{
+    const noteLines = o.notes ? wrapText(o.notes, 7.5, false, COLS[1][1]-8) : [];
+    const need = 18 + noteLines.length*9;
+    if(y - need < M + 58){ newPage(false); }
+    cell(0, o.code,    y, 8.5, true);
+    cell(1, o.name,    y, 8.5, false);
+    cell(2, o.cat,     y, 8.5, false, '0.35');
+    cell(3, o.chassis, y, 8.5, false, '0.35');
+    cell(4, o.part,    y, 8.5, false, '0.35');
+    cell(5, money(o.parts), y, 8.5, false);
+    cell(6, hrs(o.hrs),     y, 8.5, false);
+    cell(7, money(o.labor), y, 8.5, false);
+    cell(8, money(o.total), y, 8.5, true);
+    y -= 11;
+    noteLines.forEach(l=>{ T(l, X[1], y, 7.5, false, '0.52'); y -= 9; });
+    RULE(y + 4, 0.4, '0.86');
+    y -= 7;
+  });
+
+  if(xHrs){
+    if(y - 28 < M + 58) newPage(false);
+    cell(0, '-', y, 8.5, true);
+    cell(1, 'Additional labor', y, 8.5, false);
+    cell(2, 'Labor', y, 8.5, false, '0.35');
+    cell(6, hrs(xHrs),   y, 8.5, false);
+    cell(7, money(xAmt), y, 8.5, false);
+    cell(8, money(xAmt), y, 8.5, true);
+    y -= 11;
+    if(state.xwhy){ T(clip(state.xwhy,7.5,false,COLS[1][1]-8), X[1], y, 7.5, false, '0.52'); y -= 9; }
+    RULE(y + 4, 0.4, '0.86');
+    y -= 7;
+  }
+
+  y -= 4; RULE(y, 1.2, '0.12'); y -= 15;
+  // The footer label runs across the empty left-hand columns, so it is not clipped to one.
+  T(sel.length + (sel.length===1?' option':' options') + (xHrs ? ' + added labor' : ''),
+    X[0], y, 9, true);
+  cell(5, money(parts), y, 9, true);
+  cell(6, hrs(hours),   y, 9, true);
+  cell(7, money(labor), y, 9, true);
+  cell(8, money(total), y, 10.5, true);
+  pages.push(ops);
+
+  let out = '%PDF-1.4\n'; const off = [];
+  const add = (n, body)=>{ off[n] = out.length; out += n+' 0 obj\n'+body+'\nendobj\n'; };
+  add(1, '<</Type/Catalog/Pages 2 0 R>>');
+  add(2, '<</Type/Pages/Kids['+pages.map((_,i)=>(6+2*i)+' 0 R').join(' ')+']/Count '+pages.length+'>>');
+  add(3, '<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>');
+  add(4, '<</Type/Font/Subtype/Type1/BaseFont/Helvetica-Bold/Encoding/WinAnsiEncoding>>');
+  pages.forEach((ps,i)=>{
+    const st = ps.join('\n');
+    add(5+2*i, '<</Length '+st.length+'>>\nstream\n'+st+'\nendstream');
+    add(6+2*i, '<</Type/Page/Parent 2 0 R/MediaBox[0 0 '+W+' '+H+
+               ']/Resources<</Font<</F1 3 0 R/F2 4 0 R>>>>/Contents '+(5+2*i)+' 0 R>>');
+  });
+  const count = 5 + 2*pages.length;
+  const xref = out.length;
+  out += 'xref\n0 '+count+'\n0000000000 65535 f \n';
+  for(let n=1;n<count;n++) out += String(off[n]).padStart(10,'0')+' 00000 n \n';
+  out += 'trailer\n<</Size '+count+'/Root 1 0 R>>\nstartxref\n'+xref+'\n%%EOF';
+
+  const bytes = new Uint8Array(out.length);
+  for(let i=0;i<out.length;i++) bytes[i] = out.charCodeAt(i) & 0xFF;
+  return new Blob([bytes], {type:'application/pdf'});
+}
+
+// A plain-text build sheet, for viewers the platform will not let save a file.
+// Pastes cleanly into an email or a work order.
+function sheetText(){
+  const sel   = selected();
+  const xHrs  = Math.max(0, Number(state.xhrs) || 0), xAmt = xHrs * RATE;
+  const parts = sel.reduce((a,o)=>a+o.parts,0);
+  const labor = sel.reduce((a,o)=>a+o.labor,0) + xAmt;
+  const hours = sel.reduce((a,o)=>a+o.hrs,0) + xHrs;
+  const total = sel.reduce((a,o)=>a+o.total,0) + xAmt;
+  const L = ['NERV Inc. - Service Options Build Sheet',
+    [state.cust||'', state.unit ? 'Unit '+state.unit : '', state.brand||'All brands',
+     state.vtype||'All types', new Date().toLocaleDateString('en-US')].filter(Boolean).join('  ·  '), ''];
+  sel.forEach(o=>{
+    L.push(o.code + '  ' + o.name);
+    L.push('    ' + [o.chassis, o.part && o.part!=='N/A' ? 'Part '+o.part : '',
+                     hrs(o.hrs)+' hr'].filter(Boolean).join(' · ') + '    ' + money(o.total));
+    if(o.notes) L.push('    Note: ' + o.notes);
+  });
+  if(xHrs){
+    L.push('Additional labor' + (state.xwhy ? ' - ' + state.xwhy : ''));
+    L.push('    ' + hrs(xHrs) + ' hr    ' + money(xAmt));
+  }
+  L.push('', 'Parts        ' + money(parts),
+             'Labor        ' + money(labor) + '  (' + hrs(hours) + ' hr)',
+             'TOTAL SELL   ' + money(total));
+  return L.join('\n');
+}
+
+// The same build sheet as an HTML table with inline styles, which Word and
+// Outlook paste as a real table. Word then saves it as a PDF in one step.
+function sheetHtml(){
+  const sel   = selected();
+  const xHrs  = Math.max(0, Number(state.xhrs) || 0), xAmt = xHrs * RATE;
+  const parts = sel.reduce((a,o)=>a+o.parts,0);
+  const labor = sel.reduce((a,o)=>a+o.labor,0) + xAmt;
+  const hours = sel.reduce((a,o)=>a+o.hrs,0) + xHrs;
+  const total = sel.reduce((a,o)=>a+o.total,0) + xAmt;
+  const head = [state.cust||'', state.unit ? 'Unit '+state.unit : '', state.brand||'All brands',
+                state.vtype||'All types', new Date().toLocaleDateString('en-US')].filter(Boolean).join('  ·  ');
+  const F = 'font-family:Arial,Helvetica,sans-serif;font-size:10pt;';
+  const td = (html, right, extra)=>'<td style="'+F+'padding:4px 8px;border-bottom:1px solid #cccccc;vertical-align:top;'
+    +(right?'text-align:right;white-space:nowrap;':'')+(extra||'')+'">'+html+'</td>';
+  const th = (s, right)=>'<td style="'+F+'font-size:8pt;font-weight:bold;letter-spacing:.05em;padding:5px 8px;'
+    +'border-bottom:2px solid #111111;'+(right?'text-align:right;':'')+'">'+esc(s.toUpperCase())+'</td>';
+  let h = '<div style="'+F+'">'
+    + '<div style="'+F+'font-size:15pt;font-weight:bold;">NERV Inc. — Service Options Build Sheet</div>'
+    + '<div style="'+F+'color:#555555;margin:2px 0 10px;">'+esc(head)+'</div>'
+    + '<table cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%;">'
+    + '<tr>'+[['Code'],['Option'],['Chassis'],['Part #'],['Parts',1],['Hrs',1],['Labor',1],['Total',1]]
+        .map(c=>th(c[0], c[1])).join('')+'</tr>';
+  sel.forEach(o=>{
+    h += '<tr>' + td('<b>'+esc(o.code)+'</b>')
+      + td(esc(o.name) + (o.notes ? '<br><span style="color:#666666;font-size:9pt;font-style:italic;">'+esc(o.notes)+'</span>' : ''))
+      + td(esc(o.chassis)) + td(esc(o.part)) + td(money(o.parts), 1) + td(hrs(o.hrs), 1)
+      + td(money(o.labor), 1) + td('<b>'+money(o.total)+'</b>', 1) + '</tr>';
+  });
+  if(xHrs){
+    h += '<tr>' + td('—') + td('Additional labor' + (state.xwhy
+        ? '<br><span style="color:#666666;font-size:9pt;font-style:italic;">'+esc(state.xwhy)+'</span>' : ''))
+      + td('') + td('') + td('', 1) + td(hrs(xHrs), 1) + td(money(xAmt), 1) + td('<b>'+money(xAmt)+'</b>', 1) + '</tr>';
+  }
+  const tf = 'border-top:2px solid #111111;border-bottom:0;font-weight:bold;';
+  h += '<tr>' + td(sel.length + (sel.length===1?' option':' options') + (xHrs?' + added labor':''), 0, tf)
+    + td('',0,tf) + td('',0,tf) + td('',0,tf) + td(money(parts),1,tf) + td(hrs(hours),1,tf)
+    + td(money(labor),1,tf) + td('<span style="font-size:12pt;">'+money(total)+'</span>',1,tf) + '</tr>'
+    + '</table></div>';
+  return h;
+}
+
+// Copy the build sheet as both plain text and a formatted table, so the paste
+// target picks whichever it understands.
+async function copyRich(){
+  if(window.ClipboardItem && navigator.clipboard.write){
+    await navigator.clipboard.write([new ClipboardItem({
+      'text/plain': new Blob([sheetText()], {type:'text/plain'}),
+      'text/html':  new Blob([sheetHtml()], {type:'text/html'})
+    })]);
+  } else {
+    await navigator.clipboard.writeText(sheetText());
+  }
+}
+
+function pdfName(){
+  const bits = [state.unit || state.cust || 'build', state.brand || 'all'];
+  return 'NERV-' + bits.join('-').replace(/[^A-Za-z0-9._-]+/g,'-').replace(/-+/g,'-') + '.pdf';
+}
+
+/* ---- events ---- */
+$('f-brand').addEventListener('change', e=>{ state.brand=e.target.value; syncChassis(); save(); render(); });
+$('f-type').addEventListener('change', e=>{ state.vtype=e.target.value; syncChassis(); save(); render(); });
+$('f-chassis').addEventListener('change', e=>{ state.chassis=e.target.value; save(); render(); });
+$('f-search').addEventListener('input', e=>{ state.q=e.target.value; render(); });
+$('m-cust').addEventListener('input', e=>{ state.cust=e.target.value; save(); renderPanel(); });
+$('m-unit').addEventListener('input', e=>{ state.unit=e.target.value; save(); renderPanel(); });
+$('x-hrs').addEventListener('input', e=>{ state.xhrs=Math.max(0,Number(e.target.value)||0); save(); renderPanel(); });
+$('x-why').addEventListener('input', e=>{ state.xwhy=e.target.value; save(); renderPanel(); });
+
+$('clear-filters').addEventListener('click', ()=>{
+  state.brand=''; state.vtype=''; state.chassis=''; state.q=''; state.cats.clear();
+  $('f-brand').value=''; $('f-type').value=''; $('f-search').value='';
+  syncChassis(); save(); render();
+});
+
+$('chips').addEventListener('click', e=>{
+  const b = e.target.closest('[data-cat]'); if(!b) return;
+  const c = b.dataset.cat;
+  state.cats.has(c) ? state.cats.delete(c) : state.cats.add(c);
+  render();
+});
+
+$('list').addEventListener('change', e=>{
+  const cb = e.target.closest('input[data-code]'); if(!cb) return;
+  cb.checked ? state.sel.add(cb.dataset.code) : state.sel.delete(cb.dataset.code);
+  cb.closest('.opt').classList.toggle('on', cb.checked);
+  save(); renderPanel();
+});
+
+$('p-list').addEventListener('click', e=>{
+  const b = e.target.closest('[data-drop]'); if(!b) return;
+  state.sel.delete(b.dataset.drop); save(); render();
+});
+
+$('act-clear').addEventListener('click', ()=>{
+  state.sel.clear(); state.xhrs=0; state.xwhy='';
+  localParts = [];                       // one-off lines belong to the quote
+  $('x-hrs').value=0; $('x-why').value='';
+  save(); syncFilters(); render(); toast('Build cleared');
+});
+// The viewer sandbox blocks a page from starting its own download, so the file
+// goes out through the platform's save prompt. That capability resolves after
+// the page has loaded — sometimes seconds after — so it is awaited at click
+// time rather than read from a variable that may not be filled in yet.
+let downloadsPromise = null;
+function getDownloads(refresh){
+  if(refresh) downloadsPromise = null;
+  if(!downloadsPromise){
+    downloadsPromise = (async ()=>{
+      try { return (await window.claude?.use?.('downloads')) || null; }
+      catch(e){ return null; }
+    })();
+  }
+  return downloadsPromise;
+}
+getDownloads();   // start resolving early; the click awaits the same promise
+
+// When saving comes back empty, say which of the several possible reasons it is
+// rather than showing one flat message for all of them.
+async function permissionState(name){
+  let perms = null;
+  try { perms = await window.claude?.use?.('permissions'); }
+  catch(e){ return 'perms-threw'; }
+  if(!perms) return 'no-perms-api';
+  try { return (await perms.state(name)) || 'empty'; }
+  catch(e){ return 'state-threw'; }
+}
+async function askFor(name){
+  try{
+    const perms = await window.claude?.use?.('permissions');
+    if(!perms) return false;
+    const after = await perms.request([name]);
+    return !!after && after[name] === 'granted';
+  }catch(e){ return false; }
+}
+
+$('act-print').addEventListener('click', async ()=>{
+  const btn = $('act-print');
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Preparing...';
+  try{
+    let dl = await getDownloads();
+    if(!dl){
+      // A pending consent prompt is worth asking for once, on this deliberate click.
+      const st = await permissionState('downloads');
+      if(st === 'prompt' && await askFor('downloads')) dl = await getDownloads(true);
+      if(!dl){
+        if(st === 'denied'){
+          toast('Saving was declined for this page. Reload and allow it to download the PDF.', 7000);
+          return;
+        }
+        // Not offered to this view. Rather than dead-end, hand over the build
+        // sheet as text so it can still go out in an email.
+        // Saving a PDF here needs "Can edit" access. Hand over a formatted copy
+        // instead: paste into Word, then File > Save As > PDF.
+        try{
+          await copyRich();
+          toast('Direct PDF download needs "Can edit" access on this page. The build sheet was copied '
+              + 'as a formatted table instead — paste into Word and Save As PDF, or straight into an email.', 10000);
+        }catch(e){
+          toast('Direct PDF download needs "Can edit" access on this page. Use Copy for Word / Email instead.', 8000);
+        }
+        return;
+      }
+    }
+    const sel  = selected();
+    const xHrs = Math.max(0, Number(state.xhrs) || 0), xAmt = xHrs * RATE;
+    const blob = makePdf(sel,
+      sel.reduce((a,o)=>a+o.parts,0),
+      sel.reduce((a,o)=>a+o.labor,0) + xAmt,
+      sel.reduce((a,o)=>a+o.hrs,0) + xHrs,
+      sel.reduce((a,o)=>a+o.total,0) + xAmt, xHrs, xAmt);
+    await dl.save({filename: pdfName(), data: blob});
+    toast('Build sheet saved');
+  }catch(err){
+    const c = (err && err.code) || '';
+    toast(
+      c === 'declined'     ? 'Save cancelled — click Download again to retry.'
+    : c === 'rate_limited' ? 'A save prompt is already open. Try again in a moment.'
+    : c === 'too_large'    ? 'That build sheet is too large to save.'
+    : c === 'not_granted' || c === 'capability_disabled' || c === 'capability_removed'
+      ? 'This view is not allowed to save files. Use Copy for Excel instead.'
+    : c === 'rejected_extension' || c === 'extension_not_enabled'
+      ? 'PDF saving is switched off for this view. Use Copy for Excel instead.'
+    : 'Could not save the build sheet' + (c ? ' (' + c + ')' : '') + '.', 6000);
+  }finally{
+    btn.textContent = label;
+    renderPanel();
+  }
+});
+
+$('act-word').addEventListener('click', async ()=>{
+  try{ await copyRich(); toast('Copied as a formatted table — paste into Word or an email. Word can Save As PDF.', 6000); }
+  catch(err){ toast('Copy blocked by the browser'); }
+});
+
+$('act-copy').addEventListener('click', async ()=>{
+  const sel = selected();
+  const rows = [['Code','Option','Category','Chassis','Part #','Parts','Labor Hrs','Labor','Total','Notes']];
+  sel.forEach(o=>rows.push([o.code,o.name,o.cat,o.chassis,o.part,o.parts,o.hrs,o.labor,o.total,o.notes]));
+  const xHrs = Math.max(0, Number(state.xhrs)||0), xAmt = xHrs * RATE;
+  if(xHrs) rows.push(['','Additional labor','Labor','','',0,xHrs,xAmt,xAmt,state.xwhy]);
+  rows.push(['','','','','TOTAL',
+    sel.reduce((a,o)=>a+o.parts,0), sel.reduce((a,o)=>a+o.hrs,0)+xHrs,
+    sel.reduce((a,o)=>a+o.labor,0)+xAmt, sel.reduce((a,o)=>a+o.total,0)+xAmt,'']);
+  const tsv = rows.map(r=>r.join('\t')).join('\n');
+  try{ await navigator.clipboard.writeText(tsv); toast('Copied — paste into Excel'); }
+  catch(err){ toast('Copy blocked by the browser'); }
+});
+
+$('p-head').addEventListener('click', ()=>{
+  if(window.matchMedia('(max-width:900px)').matches) $('panel').classList.toggle('open');
+});
+
+let tid;
+function toast(msg, ms){
+  clearTimeout(tid);
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const d = document.createElement('div'); d.className='toast'; d.textContent=msg;
+  document.body.appendChild(d); tid = setTimeout(()=>d.remove(), ms || 2400);
+}
+
+render();
+</script>
+
+</body></html>
