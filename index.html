@@ -145,6 +145,20 @@ select:focus-visible,input:focus-visible,button:focus-visible,.opt:focus-visible
   background:var(--surface-2)}
 .err{grid-column:1/-1; font-size:12.5px; color:var(--accent); font-weight:500}
 @media (max-width:560px){ .modal-body{grid-template-columns:1fr} }
+/* ---------- saved builds ---------- */
+.sv-save{padding:14px 18px; border-bottom:1px solid var(--rule-2); display:flex; gap:9px; align-items:flex-end}
+.sv-save .field{flex:1}
+.sv-save input{width:100%; min-width:0}
+.sv-list{padding:4px 0 8px}
+.sv-row{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:3px 12px; padding:11px 18px; border-bottom:1px solid var(--rule-2); align-items:center}
+.sv-row.cur{box-shadow:inset 3px 0 0 var(--accent)}
+.sv-name{font-weight:600; font-size:13.5px; overflow-wrap:anywhere}
+.sv-meta{font-size:11.5px; color:var(--muted); display:flex; flex-wrap:wrap; gap:2px 10px}
+.sv-meta b{font-family:"IBM Plex Mono"; color:var(--ink-2); font-weight:600; font-variant-numeric:tabular-nums}
+.sv-acts{grid-row:1/3; grid-column:2; display:flex; gap:12px; align-items:center}
+.sv-acts .btn{padding:6px 12px; font-size:12.5px}
+.sv-empty{padding:26px 18px; text-align:center; font-size:12.5px; color:var(--muted)}
+@media (max-width:560px){ .sv-save{flex-direction:column; align-items:stretch} .sv-row{grid-template-columns:minmax(0,1fr)} .sv-acts{grid-row:auto; grid-column:1} }
 .empty{padding:40px 16px; text-align:center; color:var(--muted); border:1px dashed var(--rule); border-radius:8px}
 
 /* ---------- build panel ---------- */
@@ -247,6 +261,7 @@ button.btn:disabled{opacity:.45; cursor:not-allowed}
   <main>
     <div class="toolbar">
       <div class="count" id="count"></div>
+      <button class="btn" id="open-saved" type="button">Saved builds</button>
       <button class="btn" id="add-part" type="button">+ Add Part</button>
       <button class="btn" id="clear-filters" type="button">Reset filters</button>
     </div>
@@ -290,6 +305,7 @@ button.btn:disabled{opacity:.45; cursor:not-allowed}
       <button class="btn primary" id="act-print" type="button" disabled>Download Build Sheet (PDF)</button>
       <button class="btn" id="act-word" type="button" disabled>Copy for Word / Email</button>
       <button class="btn" id="act-copy" type="button" disabled>Copy for Excel</button>
+      <button class="btn" id="act-save" type="button" disabled>Save build</button>
       <button class="btn" id="act-clear" type="button" disabled>Clear build</button>
     </div>
   </aside>
@@ -365,6 +381,26 @@ button.btn:disabled{opacity:.45; cursor:not-allowed}
   </div>
 </div>
 
+<div class="modal" id="sv-modal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="sv-title">
+    <div class="modal-head">
+      <h2 id="sv-title">Saved Builds</h2>
+      <p>Kept in this browser on this device. Open one to pick up where you left off.</p>
+    </div>
+    <form class="sv-save" id="sv-form">
+      <div class="field">
+        <label for="sv-name">Save current build as</label>
+        <input type="text" id="sv-name" autocomplete="off" maxlength="120" placeholder="e.g. Cayuga County EMS · WC-24118">
+      </div>
+      <button class="btn primary" type="submit" id="sv-go">Save</button>
+    </form>
+    <div class="sv-list" id="sv-list"></div>
+    <div class="modal-foot">
+      <button class="btn" type="button" id="sv-close">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const OPTIONS = [{"code":"EXT-001A","cat":"Exterior","name":"Front Brush Guard","brands":["Wheeled Coach","Braun","Demers","Medix"],"vtype":"Type 1","chassis":"Ford F-Series","part":"3399","parts":1059.99,"hrs":4.0,"rate":175.0,"labor":700.0,"total":1759.99,"photo":"","detail":"","notes":""},{"code":"EXT-001B","cat":"Exterior","name":"Front Brush Guard","brands":["Wheeled Coach","Braun","Demers","Medix"],"vtype":"Type 1","chassis":"Chevy Silverado","part":"3399","parts":1059.99,"hrs":4.0,"rate":175.0,"labor":700.0,"total":1759.99,"photo":"","detail":"","notes":""},{"code":"EXT-001C","cat":"Exterior","name":"Front Brush Guard","brands":["Wheeled Coach","Demers"],"vtype":"Type 2","chassis":"Ford Transit","part":"1240","parts":1350.0,"hrs":4.0,"rate":175.0,"labor":700.0,"total":2050.0,"photo":"https://nervinc.sharepoint.com/:i:/r/sites/NERVOptionsBook/Shared%20Documents/Options%20Book%20Photos/Exterior/EXT-001C_Primary.jpg?csf=1&web=1&e=2jj1sk","detail":"","notes":""},{"code":"EXT-001D","cat":"Exterior","name":"Front Brush Guard","brands":["Wheeled Coach","Braun"],"vtype":"Type 2","chassis":"Mercedes Sprinter","part":"4081","parts":1109.0,"hrs":4.0,"rate":175.0,"labor":700.0,"total":1809.0,"photo":"","detail":"","notes":""},{"code":"EXT-001E","cat":"Exterior","name":"Front Brush Guard","brands":["Wheeled Coach","Braun","Demers","Medix"],"vtype":"Type 3","chassis":"Ford E-Series","part":"3254","parts":674.99,"hrs":4.0,"rate":175.0,"labor":700.0,"total":1374.99,"photo":"https://nervinc.sharepoint.com/:i:/s/NERVOptionsBook/IQDigqSXvcdSQqObIJ6AAQEDAaJpxJlxU-uPlUL2PcyTpLQ?e=W1EZ6n","detail":"","notes":""},{"code":"EXT-001F","cat":"Exterior","name":"Front Brush Guard","brands":["Braun","Demers"],"vtype":"Type 3","chassis":"Chevy Express","part":"4027","parts":1059.99,"hrs":4.0,"rate":175.0,"labor":700.0,"total":1759.99,"photo":"https://nervinc.sharepoint.com/:i:/s/NERVOptionsBook/IQCVhaoeCAADRIC_C1-FrSOLAYisk6CVbz7uS09-VVCdvCE?e=LjJHH3","detail":"","notes":""},{"code":"OXY-001","cat":"Oxygen","name":"Portable O2 Brackets","brands":["Demers"],"vtype":"All","chassis":"Type 1 / 2 / 3","part":"3233","parts":400.0,"hrs":1.0,"rate":175.0,"labor":175.0,"total":575.0,"photo":"https://nervinc.sharepoint.com/:i:/r/sites/NERVOptionsBook/Shared%20Documents/Options%20Book%20Photos/Exterior/OXY-001_Primary.JPG?csf=1&web=1&e=Dl31CV","detail":"","notes":""},{"code":"ELEC-001","cat":"Electrical","name":"110V Electrical Outlet (Interior)","brands":["Demers","Medix"],"vtype":"All","chassis":"Type 1 / 2 / 3","part":"N/A","parts":150.0,"hrs":3.0,"rate":175.0,"labor":525.0,"total":675.0,"photo":"https://nervinc.sharepoint.com/:i:/r/sites/NERVOptionsBook/Shared%20Documents/Options%20Book%20Photos/Exterior/ELEC-002A_Primary.jpg?csf=1&web=1&e=FWHRn4","detail":"","notes":""},{"code":"ELEC-002A","cat":"Shoreline / Electrical","name":"Auto Eject Shoreline","brands":["Demers","Medix"],"vtype":"Type 1","chassis":"All Type 1 chassis","part":"521","parts":439.99,"hrs":3.0,"rate":175.0,"labor":525.0,"total":964.99,"photo":"","detail":"","notes":""},{"code":"ELEC-002B","cat":"Shoreline / Electrical","name":"Auto Eject Shoreline","brands":["Wheeled Coach","Braun","Demers"],"vtype":"Type 2","chassis":"Transit/Sprinter","part":"521","parts":439.99,"hrs":3.0,"rate":175.0,"labor":525.0,"total":964.99,"photo":"https://nervinc.sharepoint.com/:i:/r/sites/NERVOptionsBook/Shared%20Documents/Options%20Book%20Photos/Exterior/ELEC-002B_Primary.JPG?csf=1&web=1&e=Zqy30F","detail":"","notes":""},{"code":"ELEC-002C","cat":"Shoreline / Electrical","name":"Auto Eject Shoreline","brands":["Braun","Medix"],"vtype":"Type 3","chassis":"E-Series/Express","part":"521","parts":439.99,"hrs":3.0,"rate":175.0,"labor":525.0,"total":964.99,"photo":"","detail":"","notes":""},{"code":"CAM-001A","cat":"Safety / Camera","name":"Back-Up Camera System","brands":["Braun","Medix"],"vtype":"Type 1","chassis":"All Type 1 chassis","part":"4250","parts":655.56,"hrs":2.5,"rate":175.0,"labor":437.5,"total":1093.06,"photo":"","detail":"","notes":"Medix add 3 hours."},{"code":"CAM-001B","cat":"Safety / Camera","name":"Back-Up Camera System","brands":["Wheeled Coach","Braun"],"vtype":"Type 2","chassis":"Transit/Sprinter","part":"4250","parts":655.56,"hrs":2.5,"rate":175.0,"labor":437.5,"total":1093.06,"photo":"","detail":"","notes":""},{"code":"CAM-001C","cat":"Safety / Camera","name":"Back-Up Camera System","brands":["Wheeled Coach","Braun"],"vtype":"Type 3","chassis":"E-Series/Express","part":"4250","parts":655.56,"hrs":2.5,"rate":175.0,"labor":437.5,"total":1093.06,"photo":"","detail":"","notes":""},{"code":"OXY-002","cat":"Oxygen","name":"Oxygen outlet","brands":["Wheeled Coach","Braun","Demers","Medix"],"vtype":"All","chassis":"Type 1 / 2 / 3","part":"1225","parts":142.99,"hrs":2.0,"rate":175.0,"labor":350.0,"total":492.99,"photo":"","detail":"","notes":"Medix addd 2 hours"},{"code":"ELEC-003","cat":"Electrical","name":"Vanner Inverter 1100 watt","brands":["Wheeled Coach","Braun","Demers","Medix"],"vtype":"All","chassis":"Type 1 / 2 / 3","part":"691","parts":2019.0,"hrs":2.0,"rate":175.0,"labor":350.0,"total":2369.0,"photo":"","detail":"","notes":"Consider pre-wire if not double time."},{"code":"ELEC-004","cat":"Electrical","name":"Vanner Inverter 2000 watt","brands":["Demers"],"vtype":"All","chassis":"Type 1 / 2 / 3","part":"9243","parts":3056.99,"hrs":3.0,"rate":175.0,"labor":525.0,"total":3581.99,"photo":"","detail":"","notes":""},{"code":"ELEC-005","cat":"Electrical","name":"Xantrex Inverter 2000 watt","brands":["Wheeled Coach","Braun","Demers","Medix"],"vtype":"All","chassis":"Type 1 / 2 / 3","part":"9687","parts":1419.0,"hrs":3.0,"rate":175.0,"labor":525.0,"total":1944.0,"photo":"","detail":"","notes":""},{"code":"ELEC-006","cat":"Electrical","name":"Xantrex Inverter 1000 watt","brands":["Wheeled Coach","Braun","Demers"],"vtype":"All","chassis":"Type 1 / 2 / 3","part":"9680","parts":919.99,"hrs":2.0,"rate":175.0,"labor":350.0,"total":1269.99,"photo":"","detail":"","notes":""},{"code":"SUSP-001","cat":"Suspension","name":"Liquid Spring Suspension","brands":["Braun","Demers"],"vtype":"Type 1","chassis":"Ford F-Series","part":"1155","parts":16200.0,"hrs":32.0,"rate":175.0,"labor":5600.0,"total":21800.0,"photo":"","detail":"","notes":"F-series 4x4 only"},{"code":"SUSP-001A","cat":"Suspension","name":"Liquid Spring Suspension","brands":["Wheeled Coach","Braun","Demers"],"vtype":"Type 1","chassis":"Chevy Silverado","part":"1153","parts":14100.0,"hrs":32.0,"rate":175.0,"labor":5600.0,"total":19700.0,"photo":"","detail":"","notes":""},{"code":"SUSP-001B","cat":"Suspension","name":"Liquid Spring Suspension","brands":["Wheeled Coach","Braun","Demers"],"vtype":"Type 1","chassis":"Ford F-Series","part":"1182","parts":15800.0,"hrs":32.0,"rate":175.0,"labor":5600.0,"total":21400.0,"photo":"","detail":"","notes":"F-Series 4x2 only"},{"code":"INT-001","cat":"Interior","name":"RX Fab Bari Load","brands":["Braun","Demers"],"vtype":"All","chassis":"All Chassis","part":"9991","parts":10500.0,"hrs":10.0,"rate":175.0,"labor":1750.0,"total":12250.0,"photo":"","detail":"","notes":""}];
 
@@ -396,7 +432,7 @@ const RATE = (()=>{
 })();
 
 const state = {brand:'', vtype:'', chassis:'', q:'', cats:new Set(), sel:new Set(),
-               cust:'', unit:'', xhrs:0, xwhy:''};
+               cust:'', unit:'', xhrs:0, xwhy:'', savedId:''};
 
 /* ---- restore per-browser draft ---- */
 try{
@@ -404,7 +440,7 @@ try{
   if(raw){ const d = JSON.parse(raw);
     state.brand=d.brand||''; state.vtype=d.vtype||''; state.chassis=d.chassis||'';
     state.cust=d.cust||''; state.unit=d.unit||'';
-    state.xhrs=Number(d.xhrs)||0; state.xwhy=d.xwhy||'';
+    state.xhrs=Number(d.xhrs)||0; state.xwhy=d.xwhy||''; state.savedId=d.savedId||'';
     localParts = Array.isArray(d.localParts) ? d.localParts : [];
     (d.sel||[]).forEach(c=>state.sel.add(c));
   }
@@ -413,7 +449,7 @@ function save(){
   try{ localStorage.setItem('nerv-build', JSON.stringify({
     brand:state.brand, vtype:state.vtype, chassis:state.chassis,
     cust:state.cust, unit:state.unit, sel:[...state.sel],
-    xhrs:state.xhrs, xwhy:state.xwhy, localParts:localParts
+    xhrs:state.xhrs, xwhy:state.xwhy, localParts:localParts, savedId:state.savedId
   })); }catch(e){}
 }
 
@@ -549,7 +585,7 @@ function renderPanel(){
   $('t-total').textContent = money(total);
 
   const live = sel.length || xHrs > 0;
-  ['act-print','act-word','act-copy','act-clear'].forEach(id=>$(id).disabled = !live);
+  ['act-print','act-word','act-copy','act-save','act-clear'].forEach(id=>$(id).disabled = !live);
   buildSheet(sel, parts, labor, hours, total, xHrs, xAmt);
 }
 
@@ -999,8 +1035,160 @@ $('p-list').addEventListener('click', e=>{
   state.sel.delete(b.dataset.drop); save(); render();
 });
 
+/* ---- saved builds ---- */
+// Named snapshots of the build, kept in this browser. Each one carries a copy of
+// the options it used, so it still opens complete if an option later leaves the
+// book or a one-off part was only ever on that quote.
+const SAVED_KEY = 'nerv-saved-builds';
+function readSaved(){
+  try{
+    const list = JSON.parse(localStorage.getItem(SAVED_KEY) || '[]');
+    return Array.isArray(list) ? list.filter(b=>b && b.id && b.name) : [];
+  }catch(e){ return []; }
+}
+function writeSaved(list){
+  try{ localStorage.setItem(SAVED_KEY, JSON.stringify(list)); return true; }
+  catch(e){ return false; }
+}
+function buildLive(){ return state.sel.size > 0 || Number(state.xhrs) > 0; }
+function defaultBuildName(){
+  const cur = readSaved().find(b=>b.id === state.savedId);
+  if(cur) return cur.name;
+  return [state.cust, state.unit].map(v=>v.trim()).filter(Boolean).join(' · ')
+    || 'Build ' + new Date().toLocaleDateString('en-US');
+}
+function snapshotBuild(name, id){
+  const sel  = selected();
+  const xHrs = Math.max(0, Number(state.xhrs) || 0);
+  return {
+    id: id, name: name, savedAt: Date.now(),
+    brand: state.brand, vtype: state.vtype, chassis: state.chassis,
+    cust: state.cust, unit: state.unit, xhrs: xHrs, xwhy: state.xwhy,
+    sel: sel.map(o=>o.code), opts: sel, localParts: localParts,
+    total: sel.reduce((a,o)=>a+o.total,0) + xHrs * RATE
+  };
+}
+function applyBuild(b){
+  state.brand = b.brand||''; state.vtype = b.vtype||''; state.chassis = b.chassis||'';
+  state.cust = b.cust||''; state.unit = b.unit||'';
+  state.xhrs = Number(b.xhrs)||0; state.xwhy = b.xwhy||'';
+  state.q = ''; state.cats.clear(); state.savedId = b.id;
+  localParts = Array.isArray(b.localParts) ? b.localParts.slice() : [];
+  // Anything no longer in the book comes back as a line on this quote.
+  const known = new Set(allOptions().map(o=>o.code));
+  (b.opts||[]).forEach(o=>{
+    if(o && o.code && !known.has(o.code)){
+      localParts.push(Object.assign({}, o, {custom:true, scope:'quote'}));
+      known.add(o.code);
+    }
+  });
+  state.sel.clear(); (b.sel||[]).forEach(c=>state.sel.add(c));
+  $('f-search').value = ''; $('m-cust').value = state.cust; $('m-unit').value = state.unit;
+  $('x-hrs').value = state.xhrs || 0; $('x-why').value = state.xwhy;
+  syncFilters(); save(); render();
+}
+
+const svModal = $('sv-modal');
+let svOpener = null;
+function renderSaved(){
+  const list = readSaved().sort((a,b)=>(b.savedAt||0)-(a.savedAt||0));
+  $('open-saved').textContent = 'Saved builds' + (list.length ? ' (' + list.length + ')' : '');
+  if(svModal.hidden) return;
+  const live = buildLive();
+  $('sv-name').disabled = !live;
+  syncSaveLabel();
+  $('sv-list').innerHTML = list.length ? list.map(b=>{
+    const n = (b.sel||[]).length;
+    const when = new Date(b.savedAt||0).toLocaleString('en-US',
+      {month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit'});
+    const meta = [
+      [b.brand, b.vtype].filter(Boolean).join(' · '),
+      n + ' option' + (n===1?'':'s') + (b.xhrs ? ' + ' + hrs(b.xhrs) + ' hr' : ''),
+      '<b>' + money(Number(b.total)||0) + '</b>',
+      'Saved ' + when
+    ].filter(Boolean).map(m=>'<span>'+(m.startsWith('<b>') ? m : esc(m))+'</span>').join('');
+    return '<div class="sv-row'+(b.id===state.savedId?' cur':'')+'">' +
+      '<div class="sv-name">'+esc(b.name)+'</div>' +
+      '<div class="sv-meta">'+meta+'</div>' +
+      '<div class="sv-acts">' +
+        '<button class="drop" type="button" data-sv-del="'+esc(b.id)+'">Delete</button>' +
+        '<button class="btn" type="button" data-sv-open="'+esc(b.id)+'">Open</button>' +
+      '</div></div>';
+  }).join('') : '<div class="sv-empty">No saved builds yet. Build a quote, name it above and hit Save.</div>';
+}
+function syncSaveLabel(){
+  const name = $('sv-name').value.trim().toLowerCase();
+  const hit = name && readSaved().some(b=>b.name.trim().toLowerCase() === name);
+  $('sv-go').textContent = hit ? 'Update' : 'Save';
+  $('sv-go').disabled = !buildLive() || !name;
+}
+function openSaved(focusName){
+  svOpener = document.activeElement;
+  svModal.hidden = false;
+  $('sv-name').value = buildLive() ? defaultBuildName() : '';
+  renderSaved();
+  (focusName && buildLive() ? $('sv-name') : $('sv-close')).focus();
+  if(focusName && buildLive()) $('sv-name').select();
+}
+function closeSaved(){
+  svModal.hidden = true;
+  if(svOpener && svOpener.focus) svOpener.focus();
+}
+
+$('open-saved').addEventListener('click', ()=>openSaved(false));
+$('act-save').addEventListener('click', ()=>openSaved(true));
+$('sv-close').addEventListener('click', closeSaved);
+svModal.addEventListener('click', e=>{ if(e.target === svModal) closeSaved(); });
+document.addEventListener('keydown', e=>{ if(e.key === 'Escape' && !svModal.hidden) closeSaved(); });
+$('sv-name').addEventListener('input', syncSaveLabel);
+
+$('sv-form').addEventListener('submit', e=>{
+  e.preventDefault();
+  const name = $('sv-name').value.trim();
+  if(!name || !buildLive()) return;
+  const list = readSaved();
+  const i = list.findIndex(b=>b.name.trim().toLowerCase() === name.toLowerCase());
+  const id = i >= 0 ? list[i].id : 'b' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  const snap = snapshotBuild(name, id);
+  if(i >= 0) list[i] = snap; else list.push(snap);
+  if(!writeSaved(list)){ toast('Could not save — this browser is blocking or out of storage.', 6000); return; }
+  state.savedId = id; save();
+  renderSaved();
+  toast(i >= 0 ? 'Updated “' + name + '”' : 'Saved “' + name + '”');
+});
+
+$('sv-list').addEventListener('click', e=>{
+  const del = e.target.closest('[data-sv-del]');
+  if(del){
+    if(!del.classList.contains('arm')){
+      del.classList.add('arm'); del.textContent = 'Confirm delete';
+      return;
+    }
+    const list = readSaved(), b = list.find(x=>x.id === del.dataset.svDel);
+    writeSaved(list.filter(x=>x.id !== del.dataset.svDel));
+    if(state.savedId === del.dataset.svDel){ state.savedId = ''; save(); }
+    renderSaved();
+    if(b) toast('Deleted “' + b.name + '”');
+    return;
+  }
+  const open = e.target.closest('[data-sv-open]');
+  if(open){
+    const b = readSaved().find(x=>x.id === open.dataset.svOpen);
+    if(!b){ renderSaved(); return; }
+    // Opening replaces what is on screen; ask once if that would lose work.
+    if(buildLive() && state.savedId !== b.id && !open.classList.contains('arm')){
+      open.classList.add('arm'); open.textContent = 'Replace current?';
+      return;
+    }
+    applyBuild(b);
+    closeSaved();
+    toast('Opened “' + b.name + '”');
+  }
+});
+renderSaved();
+
 $('act-clear').addEventListener('click', ()=>{
-  state.sel.clear(); state.xhrs=0; state.xwhy='';
+  state.sel.clear(); state.xhrs=0; state.xwhy=''; state.savedId='';
   localParts = [];                       // one-off lines belong to the quote
   $('x-hrs').value=0; $('x-why').value='';
   save(); syncFilters(); render(); toast('Build cleared');
