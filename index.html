@@ -177,7 +177,10 @@ select:focus-visible,input:focus-visible,button:focus-visible,.opt:focus-visible
 .p-row{display:flex; gap:8px; align-items:baseline; padding:6px 15px; font-size:12.5px}
 .p-row .nm{flex:1; min-width:0}
 .p-row .nm span{display:block; font-size:10.5px; color:var(--muted); font-family:"IBM Plex Mono"}
-.p-row .amt{font-family:"IBM Plex Mono"; font-variant-numeric:tabular-nums; font-size:12.5px}
+.p-row .qty{width:54px; min-width:0; padding:3px 6px; font-size:12px; text-align:right; align-self:center}
+.p-row .nm em:empty{display:none}
+.p-row .nm em{display:block; font-style:normal; font-size:10.5px; color:var(--muted)}
+.p-row .amt{font-family:"IBM Plex Mono"; font-variant-numeric:tabular-nums; font-size:12.5px; min-width:74px; text-align:right}
 .p-row .x{background:none; border:0; color:var(--muted); cursor:pointer; font-size:15px; line-height:1; padding:0 2px}
 .p-row .x:hover{color:var(--accent)}
 .p-empty{padding:18px 15px; font-size:12.5px; color:var(--muted)}
@@ -437,7 +440,7 @@ const RATE = (()=>{
 })();
 
 const state = {brand:'', vtype:'', chassis:'', q:'', cats:new Set(), sel:new Set(),
-               cust:'', unit:'', xhrs:0, xwhy:'', savedId:''};
+               cust:'', unit:'', xhrs:0, xwhy:'', savedId:'', qty:{}};
 
 /* ---- restore per-browser draft ---- */
 try{
@@ -448,12 +451,13 @@ try{
     state.xhrs=Number(d.xhrs)||0; state.xwhy=d.xwhy||''; state.savedId=d.savedId||'';
     localParts = Array.isArray(d.localParts) ? d.localParts : [];
     (d.sel||[]).forEach(c=>state.sel.add(c));
+    if(d.qty && typeof d.qty === 'object') state.qty = d.qty;
   }
 }catch(e){}
 function save(){
   try{ localStorage.setItem('nerv-build', JSON.stringify({
     brand:state.brand, vtype:state.vtype, chassis:state.chassis,
-    cust:state.cust, unit:state.unit, sel:[...state.sel],
+    cust:state.cust, unit:state.unit, sel:[...state.sel], qty:state.qty,
     xhrs:state.xhrs, xwhy:state.xwhy, localParts:localParts, savedId:state.savedId
   })); }catch(e){}
 }
@@ -564,12 +568,28 @@ function optRow(o){
     flag + '</label>';
 }
 
-function selected(){
+// How many of a part are on the build (1 when never set).
+function qtyOf(code){
+  const q = Math.floor(Number(state.qty[code]));
+  return q >= 1 ? Math.min(q, 9999) : 1;
+}
+function selectedUnits(){
   const all = allOptions();
   return [...state.sel].map(c=>all.find(o=>o.code===c)).filter(Boolean);
 }
+// Build lines: each selected part with its money and hours multiplied out by
+// its quantity. The per-unit figures stay on the line as unitParts/unitTotal.
+function selected(){
+  return selectedUnits().map(o=>{
+    const q = qtyOf(o.code);
+    return Object.assign({}, o, {qty:q, unitParts:o.parts, unitTotal:o.total,
+      parts:o.parts*q, hrs:o.hrs*q, labor:o.labor*q, total:o.total*q});
+  });
+}
+const units = sel => sel.reduce((a,o)=>a+o.qty,0);
+const unitLabel = sel => { const n = units(sel); return n + (n===1?' part':' parts'); };
 
-function renderPanel(){
+function renderPanel(keepList){
   const sel = selected();
   const parts = sel.reduce((a,o)=>a+o.parts,0);
   const xHrs  = Math.max(0, Number(state.xhrs) || 0);
@@ -582,9 +602,21 @@ function renderPanel(){
     ? hrs(xHrs)+' hr &times; '+money(RATE)+' = <b>'+money(xAmt)+'</b>'
     : 'Added to the build at '+money(RATE)+'/hr.';
 
-  $('p-count').textContent = sel.length + ' part' + (sel.length===1?'':'s');
-  $('p-list').innerHTML = sel.length
-    ? sel.map(o=>'<div class="p-row"><div class="nm">'+esc(o.name)+'<span>'+esc(o.code)+'</span></div>'+
+  $('p-count').textContent = unitLabel(sel);
+  const qtyNote = o => o.qty > 1 ? o.qty+' \u00d7 '+money(o.unitTotal) : '';
+  if(keepList){
+    // A quantity is being typed: update the lines in place so the box keeps focus and caret.
+    sel.forEach(o=>{
+      const row = [...$('p-list').querySelectorAll('.p-row')].find(r=>r.dataset.code === o.code);
+      if(!row) return;
+      row.querySelector('.amt').textContent = money(o.total);
+      row.querySelector('.nm em').textContent = qtyNote(o);
+    });
+  } else $('p-list').innerHTML = sel.length
+    ? sel.map(o=>'<div class="p-row" data-code="'+esc(o.code)+'"><div class="nm">'+esc(o.name)+'<span>'+esc(o.code)+'</span>'+
+        '<em>'+esc(qtyNote(o))+'</em></div>'+
+        '<input class="qty num" type="number" min="1" max="9999" step="1" inputmode="numeric" value="'+o.qty+'"'+
+        ' data-qty="'+esc(o.code)+'" aria-label="Quantity of '+esc(o.name)+'">'+
         '<div class="amt">'+money(o.total)+'</div>'+
         '<button class="x" type="button" data-drop="'+esc(o.code)+'" aria-label="Remove '+esc(o.name)+'">&times;</button></div>').join('')
     : '<div class="p-empty">No parts selected yet. Check a part to add it to the build.</div>';
@@ -603,17 +635,17 @@ function buildSheet(sel, parts, labor, hours, total, xHrs, xAmt){
   const head = [state.cust||'—', state.unit ? 'Unit '+state.unit : '', state.vtype, new Date().toLocaleDateString('en-US')].filter(Boolean).join('  ·  ');
   $('sheet').innerHTML =
     '<h1>NERV Inc. — Service Options Build Sheet</h1><div class="sh-sub">'+esc(head)+'</div>' +
-    '<table><thead><tr><th>Code</th><th>Option</th><th>Vendor</th><th class="r">Part #</th>' +
+    '<table><thead><tr><th>Code</th><th>Option</th><th>Vendor</th><th class="r">Qty</th>' +
     '<th class="r">Parts</th><th class="r">Hrs</th><th class="r">Labor</th><th class="r">Total</th></tr></thead><tbody>' +
     sel.map(o=>'<tr><td>'+esc(o.code)+'</td><td>'+esc(o.name)+
       (o.notes?'<div class="nt">'+esc(o.notes)+'</div>':'')+'</td><td>'+esc(o.brands.join(', '))+'</td>'+
-      '<td class="r">'+esc(o.part)+'</td><td class="r">'+money(o.parts)+'</td><td class="r">'+hrs(o.hrs)+
+      '<td class="r">'+o.qty+'</td><td class="r">'+money(o.parts)+'</td><td class="r">'+hrs(o.hrs)+
       '</td><td class="r">'+money(o.labor)+'</td><td class="r">'+money(o.total)+'</td></tr>').join('') +
     (xHrs ? '<tr><td>—</td><td>Additional labor'+
       (state.xwhy?'<div class="nt">'+esc(state.xwhy)+'</div>':'')+'</td><td></td><td class="r"></td>'+
       '<td class="r">—</td><td class="r">'+hrs(xHrs)+'</td><td class="r">'+money(xAmt)+
       '</td><td class="r">'+money(xAmt)+'</td></tr>' : '') +
-    '</tbody><tfoot><tr><td colspan="4">'+sel.length+(sel.length===1?' part':' parts')+(xHrs?' + added labor':'')+'</td><td class="r">'+money(parts)+
+    '</tbody><tfoot><tr><td colspan="4">'+unitLabel(sel)+(xHrs?' + added labor':'')+'</td><td class="r">'+money(parts)+
     '</td><td class="r">'+hrs(hours)+'</td><td class="r">'+money(labor)+'</td><td class="r">'+money(total)+
     '</td></tr></tfoot></table>';
 }
@@ -825,7 +857,7 @@ function clip(s, size, bold, max){
 function makePdf(sel, parts, labor, hours, total, xHrs, xAmt){
   const W = 792, H = 612, M = 36;
   const COLS = [['Code',66,'l'],['Option',186,'l'],['Category',86,'l'],['Vendor',92,'l'],
-                ['Part #',44,'l'],['Parts',60,'r'],['Hrs',32,'r'],['Labor',60,'r'],['Total',68,'r']];
+                ['Qty',44,'r'],['Parts',60,'r'],['Hrs',32,'r'],['Labor',60,'r'],['Total',68,'r']];
   const X = []; let cx = M;
   COLS.forEach(c=>{ X.push(cx); cx += c[1]; });
   const RIGHT = cx;
@@ -865,7 +897,7 @@ function makePdf(sel, parts, labor, hours, total, xHrs, xAmt){
     cell(1, o.name,    y, 8.5, false);
     cell(2, o.cat,     y, 8.5, false, '0.35');
     cell(3, o.brands.join(', '), y, 8.5, false, '0.35');
-    cell(4, o.part,    y, 8.5, false, '0.35');
+    cell(4, String(o.qty), y, 8.5, false);
     cell(5, money(o.parts), y, 8.5, false);
     cell(6, hrs(o.hrs),     y, 8.5, false);
     cell(7, money(o.labor), y, 8.5, false);
@@ -892,7 +924,7 @@ function makePdf(sel, parts, labor, hours, total, xHrs, xAmt){
 
   y -= 4; RULE(y, 1.2, '0.12'); y -= 15;
   // The footer label runs across the empty left-hand columns, so it is not clipped to one.
-  T(sel.length + (sel.length===1?' part':' parts') + (xHrs ? ' + added labor' : ''),
+  T(unitLabel(sel) + (xHrs ? ' + added labor' : ''),
     X[0], y, 9, true);
   cell(5, money(parts), y, 9, true);
   cell(6, hrs(hours),   y, 9, true);
@@ -937,6 +969,7 @@ function sheetText(){
   sel.forEach(o=>{
     L.push(o.code + '  ' + o.name);
     L.push('    ' + [o.brands.join(', '), o.part && o.part!=='N/A' && o.part!==o.code ? 'Part '+o.part : '',
+                     o.qty > 1 ? o.qty+' x '+money(o.unitTotal) : '',
                      hrs(o.hrs)+' hr'].filter(Boolean).join(' · ') + '    ' + money(o.total));
     if(o.notes) L.push('    Note: ' + o.notes);
   });
@@ -969,12 +1002,12 @@ function sheetHtml(){
     + '<div style="'+F+'font-size:15pt;font-weight:bold;">NERV Inc. — Service Options Build Sheet</div>'
     + '<div style="'+F+'color:#555555;margin:2px 0 10px;">'+esc(head)+'</div>'
     + '<table cellspacing="0" cellpadding="0" style="border-collapse:collapse;width:100%;">'
-    + '<tr>'+[['Code'],['Option'],['Vendor'],['Part #'],['Parts',1],['Hrs',1],['Labor',1],['Total',1]]
+    + '<tr>'+[['Code'],['Option'],['Vendor'],['Qty',1],['Parts',1],['Hrs',1],['Labor',1],['Total',1]]
         .map(c=>th(c[0], c[1])).join('')+'</tr>';
   sel.forEach(o=>{
     h += '<tr>' + td('<b>'+esc(o.code)+'</b>')
       + td(esc(o.name) + (o.notes ? '<br><span style="color:#666666;font-size:9pt;font-style:italic;">'+esc(o.notes)+'</span>' : ''))
-      + td(esc(o.brands.join(', '))) + td(esc(o.part)) + td(money(o.parts), 1) + td(hrs(o.hrs), 1)
+      + td(esc(o.brands.join(', '))) + td(String(o.qty), 1) + td(money(o.parts), 1) + td(hrs(o.hrs), 1)
       + td(money(o.labor), 1) + td('<b>'+money(o.total)+'</b>', 1) + '</tr>';
   });
   if(xHrs){
@@ -983,7 +1016,7 @@ function sheetHtml(){
       + td('') + td('') + td('', 1) + td(hrs(xHrs), 1) + td(money(xAmt), 1) + td('<b>'+money(xAmt)+'</b>', 1) + '</tr>';
   }
   const tf = 'border-top:2px solid #111111;border-bottom:0;font-weight:bold;';
-  h += '<tr>' + td(sel.length + (sel.length===1?' part':' parts') + (xHrs?' + added labor':''), 0, tf)
+  h += '<tr>' + td(unitLabel(sel) + (xHrs?' + added labor':''), 0, tf)
     + td('',0,tf) + td('',0,tf) + td('',0,tf) + td(money(parts),1,tf) + td(hrs(hours),1,tf)
     + td(money(labor),1,tf) + td('<span style="font-size:12pt;">'+money(total)+'</span>',1,tf) + '</tr>'
     + '</table></div>';
@@ -1033,14 +1066,26 @@ $('chips').addEventListener('click', e=>{
 
 $('list').addEventListener('change', e=>{
   const cb = e.target.closest('input[data-code]'); if(!cb) return;
-  cb.checked ? state.sel.add(cb.dataset.code) : state.sel.delete(cb.dataset.code);
+  if(cb.checked) state.sel.add(cb.dataset.code);
+  else { state.sel.delete(cb.dataset.code); delete state.qty[cb.dataset.code]; }
   cb.closest('.opt').classList.toggle('on', cb.checked);
   save(); renderPanel();
 });
 
+function setQty(input, final){
+  const code = input.dataset.qty;
+  const raw = input.value.trim();
+  if(raw === '' && !final) return;            // mid-edit: wait for a number
+  const q = Math.floor(Number(raw));
+  state.qty[code] = q >= 1 ? Math.min(q, 9999) : 1;
+  save(); renderPanel(!final);
+}
+$('p-list').addEventListener('input',  e=>{ const i = e.target.closest('input[data-qty]'); if(i) setQty(i, false); });
+$('p-list').addEventListener('change', e=>{ const i = e.target.closest('input[data-qty]'); if(i) setQty(i, true); });
+
 $('p-list').addEventListener('click', e=>{
   const b = e.target.closest('[data-drop]'); if(!b) return;
-  state.sel.delete(b.dataset.drop); save(); render();
+  state.sel.delete(b.dataset.drop); delete state.qty[b.dataset.drop]; save(); render();
 });
 
 /* ---- saved builds ---- */
@@ -1068,11 +1113,12 @@ function defaultBuildName(){
 function snapshotBuild(name, id){
   const sel  = selected();
   const xHrs = Math.max(0, Number(state.xhrs) || 0);
+  const qty  = {}; sel.forEach(o=>{ qty[o.code] = o.qty; });
   return {
     id: id, name: name, savedAt: Date.now(),
     brand: state.brand, vtype: state.vtype, chassis: state.chassis,
     cust: state.cust, unit: state.unit, xhrs: xHrs, xwhy: state.xwhy,
-    sel: sel.map(o=>o.code), opts: sel, localParts: localParts,
+    sel: sel.map(o=>o.code), qty: qty, opts: selectedUnits(), localParts: localParts,
     total: sel.reduce((a,o)=>a+o.total,0) + xHrs * RATE
   };
 }
@@ -1091,6 +1137,7 @@ function applyBuild(b){
     }
   });
   state.sel.clear(); (b.sel||[]).forEach(c=>state.sel.add(c));
+  state.qty = (b.qty && typeof b.qty === 'object') ? Object.assign({}, b.qty) : {};
   $('f-search').value = ''; $('m-cust').value = state.cust; $('m-unit').value = state.unit;
   $('x-hrs').value = state.xhrs || 0; $('x-why').value = state.xwhy;
   syncFilters(); save(); render();
@@ -1106,7 +1153,7 @@ function renderSaved(){
   $('sv-name').disabled = !live;
   syncSaveLabel();
   $('sv-list').innerHTML = list.length ? list.map(b=>{
-    const n = (b.sel||[]).length;
+    const n = (b.sel||[]).reduce((a,c)=>a + (b.qty && b.qty[c] >= 1 ? Math.floor(b.qty[c]) : 1), 0);
     const when = new Date(b.savedAt||0).toLocaleString('en-US',
       {month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit'});
     const meta = [
@@ -1196,7 +1243,7 @@ $('sv-list').addEventListener('click', e=>{
 renderSaved();
 
 $('act-clear').addEventListener('click', ()=>{
-  state.sel.clear(); state.xhrs=0; state.xwhy=''; state.savedId='';
+  state.sel.clear(); state.qty={}; state.xhrs=0; state.xwhy=''; state.savedId='';
   localParts = [];                       // one-off lines belong to the quote
   $('x-hrs').value=0; $('x-why').value='';
   save(); syncFilters(); render(); toast('Build cleared');
@@ -1309,11 +1356,11 @@ $('act-word').addEventListener('click', async ()=>{
 
 $('act-copy').addEventListener('click', async ()=>{
   const sel = selected();
-  const rows = [['Code','Option','Category','Vendor','Part #','Parts','Labor Hrs','Labor','Total','Notes']];
-  sel.forEach(o=>rows.push([o.code,o.name,o.cat,o.brands.join(', '),o.part,o.parts,o.hrs,o.labor,o.total,o.notes]));
+  const rows = [['Code','Option','Category','Vendor','Part #','Qty','Unit Price','Parts','Labor Hrs','Labor','Total','Notes']];
+  sel.forEach(o=>rows.push([o.code,o.name,o.cat,o.brands.join(', '),o.part,o.qty,o.unitTotal,o.parts,o.hrs,o.labor,o.total,o.notes]));
   const xHrs = Math.max(0, Number(state.xhrs)||0), xAmt = xHrs * RATE;
-  if(xHrs) rows.push(['','Additional labor','Labor','','',0,xHrs,xAmt,xAmt,state.xwhy]);
-  rows.push(['','','','','TOTAL',
+  if(xHrs) rows.push(['','Additional labor','Labor','','','','',0,xHrs,xAmt,xAmt,state.xwhy]);
+  rows.push(['','','','','TOTAL',units(sel),'',
     sel.reduce((a,o)=>a+o.parts,0), sel.reduce((a,o)=>a+o.hrs,0)+xHrs,
     sel.reduce((a,o)=>a+o.labor,0)+xAmt, sel.reduce((a,o)=>a+o.total,0)+xAmt,'']);
   const tsv = rows.map(r=>r.join('\t')).join('\n');
